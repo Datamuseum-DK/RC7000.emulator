@@ -1,0 +1,270 @@
+#!/usr/local/bin/wish8.4
+
+frame .p
+pack .p
+
+proc fpbit {w i} {
+	label $w.t$i -anchor c  -text $i
+	checkbutton $w.a$i -anchor w  -variable adr$i 
+	checkbutton $w.l$i -anchor w  -variable led$i
+	checkbutton $w.s$i -anchor w -variable sw($i) -command "sw $i" -onvalue [expr 1 << 15 - $i]
+	grid $w.t$i -row 0 -column $i -sticky w
+	grid $w.a$i -row 1 -column $i -sticky w
+	grid $w.l$i -row 2 -column $i -sticky w
+	grid $w.s$i -row 3 -column $i -sticky w
+}
+
+proc fpdigit {w l x} {
+	frame $w.$l -relief ridge -border 2
+	pack $w.$l -side left
+	foreach i $x {
+		fpbit $w.$l $i
+	}
+}
+
+fpdigit .p a {0}
+fpdigit .p b {1 2 3}
+fpdigit .p c {4 5 6}
+fpdigit .p d {7 8 9}
+fpdigit .p e {10 11 12}
+fpdigit .p f {13 14 15}
+
+frame .p.g -relief ridge -border 2
+label .p.g.to -text "octal"
+label .p.g.th -text "hex"
+label .p.g.td -text "decimal"
+entry .p.g.ao -state readonly -width 6 -textvariable adroct
+entry .p.g.ah -state readonly -width 6 -textvariable adrhex
+entry .p.g.ad -state readonly -width 6 -textvariable adrdec
+entry .p.g.lo -state readonly -width 6 -textvariable ledoct
+entry .p.g.lh -state readonly -width 6 -textvariable ledhex
+entry .p.g.ld -state readonly -width 6 -textvariable leddec
+entry .p.g.so -width 6 -textvariable swoct
+entry .p.g.sh -width 6 -textvariable swhex
+entry .p.g.sd -width 6 -textvariable swdec
+grid .p.g.to -row 0 -column 1 -sticky w
+grid .p.g.th -row 0 -column 2 -sticky w
+grid .p.g.td -row 0 -column 3 -sticky w
+grid .p.g.ao -row 1 -column 1 -sticky w
+grid .p.g.ah -row 1 -column 2 -sticky w
+grid .p.g.ad -row 1 -column 3 -sticky w
+grid .p.g.lo -row 2 -column 1 -sticky w
+grid .p.g.lh -row 2 -column 2 -sticky w
+grid .p.g.ld -row 2 -column 3 -sticky w
+grid .p.g.so -row 3 -column 1 -sticky w
+grid .p.g.sh -row 3 -column 2 -sticky w
+grid .p.g.sd -row 3 -column 3 -sticky w
+pack .p.g -side left
+
+frame .s
+pack .s
+
+grid [button .s.a -text "ac0 deposit" -command {puts DEPAC0}] -row 0 -column 1 -sticky w
+grid [button .s.b -text "ac0 examine" -command {puts EXAAC0}]  -row 1 -column 1 -sticky w
+grid [button .s.c -text "ac1 deposit" -command {puts DEPAC1}] -row 0 -column 2 -sticky w
+grid [button .s.d -text "ac1 examine" -command {puts EXAAC1}]  -row 1 -column 2 -sticky w
+grid [button .s.e -text "ac2 deposit" -command {puts DEPAC2}] -row 0 -column 3 -sticky w
+grid [button .s.f -text "ac2 examine" -command {puts EXAAC2}]  -row 1 -column 3 -sticky w
+grid [button .s.g -text "ac3 deposit" -command {puts DEPAC3}] -row 0 -column 4 -sticky w
+grid [button .s.h -text "ac3 examine" -command {puts EXAAC3}]  -row 1 -column 4 -sticky w
+
+grid [button .s.i -text "reset" -command {puts RESET}] -row 0 -column 5 -sticky w
+grid [button .s.j -text "stop" -command {puts STOP}]  -row 1 -column 5 -sticky w
+
+grid [button .s.k -text "start" -command {puts START}] -row 0 -column 6 -sticky w
+grid [button .s.l -text "continue" -command {puts CONTINUE}]  -row 1 -column 6 -sticky w
+
+grid [button .s.m -text "deposit" -command {puts DEPOSIT}] -row 0 -column 7 -sticky w
+grid [button .s.n -text "deposit next" -command {puts DEPOSITNEXT}]  -row 1 -column 7 -sticky w
+
+grid [button .s.o -text "examine" -command {puts EXAM}] -row 0 -column 8 -sticky w
+grid [button .s.p -text "examine next" -command {puts EXAMNEXT}]  -row 1 -column 8 -sticky w
+
+grid [button .s.r -text "program load" -command {puts AUTOLOAD}]  -row 0 -column 9 -sticky w
+grid [button .s.q -text "inst step" -command {puts STEP}]  -row 1 -column 9 -sticky w
+
+set swval 0
+proc sw {bit} {
+	global sw swval
+	global swoct swhex swdec
+
+	set swval 0
+	foreach i [array names sw] {
+		incr swval $sw($i)
+	}
+
+	set swoct [format "%05o" $swval]
+	set swhex [format "%04x" $swval]
+	set swdec [format "%6d" $swval]
+	puts "SW $swval"
+}
+
+proc setadr {val} {
+	global adroct adrhex adrdec
+	set adroct [format "%05o" $val]
+	set adrhex [format "%04x" $val]
+	set adrdec [format "%6d" $val]
+	for {set i 15} {$i >= 0} {incr i -1} {
+		global adr$i
+		if {$val & 1} {
+			set adr$i 1
+		} else {
+			set adr$i 0
+		}
+		set val [expr $val >> 1]
+	}
+}
+
+proc setled {val} {
+	global ledoct ledhex leddec
+	set ledoct [format "%05o" $val]
+	set ledhex [format "%04x" $val]
+	set leddec [format "%6d" $val]
+	for {set i 15} {$i >= 0} {incr i -1} {
+		global led$i
+		if {$val & 1} {
+			set led$i 1
+		} else {
+			set led$i 0
+		}
+		set val [expr $val >> 1]
+	}
+}
+
+setled 01234
+
+# Drives stuff
+
+frame .drv -borderwidth 2 -relief ridge
+
+set c 0
+for {set i 0} {$i < 4} {incr i} {
+	scale .drv.dkps$i -from 0 -to 203 -orient horiz -variable dkp($i) \
+	    -state disabled -sliderlength 2 -showvalue false
+	label .drv.dkpl$i -text "DKP$i"
+	button .drv.dkpb$i -command "dkpbut $i"
+	grid .drv.dkpl$i -row $c -column 0
+	grid .drv.dkps$i -row $c -column 1
+	grid .drv.dkpb$i -row $c -column 2
+	incr c
+}
+
+proc dkpbut {dr} {
+	set fn [tk_getOpenFile -title "Select file for DKP$dr drive"]
+	puts "DKPFN$dr $fn"
+}
+
+proc dkp {dr cyl} {
+	global dkp
+
+	set dkp($dr) $cyl
+}
+
+for {set i 0} {$i < 2} {incr i} {
+	scale .drv.fds$i -from 0 -to 77 -orient horiz -variable fd($i) \
+	    -state disabled -sliderlength 2 -showvalue false
+	label .drv.fdl$i -text "FD$i"
+	button .drv.fdb$i -command "fdbut $i"
+	grid .drv.fdl$i -row $c -column 0
+	grid .drv.fds$i -row $c -column 1
+	grid .drv.fdb$i -row $c -column 2
+	incr c
+}
+
+proc fdbut {dr} {
+	set fn [tk_getOpenFile -title "Select file for FD$dr drive"]
+	puts "FDFN$dr $fn"
+}
+
+proc fd {dr cyl} {
+	global fd
+
+	set fd($dr) $cyl
+}
+
+frame .tty
+text .tty.t -yscrollcommand ".tty.y set" -wrap char
+scrollbar .tty.y -ori vert -command ".tty.t yview"
+pack .tty.t -fill y -side left
+pack .tty.y -fill y -side right
+
+bind .tty.t <KeyPress> {
+	set c "%A"
+	if {"$c" == "{}"} break
+	if {"$c" == "\n"} {
+		puts "KEYRET"
+	} else {
+		puts "KEY $c"
+	}
+	flush stdout
+	break 
+}
+
+for {set i 0} {$i < 65536} {incr i} {
+	.tty.t insert end "\n"
+}
+.tty.t mark set insert end
+.tty.t see insert
+
+proc t {s} {
+	.tty.t insert end "$s"
+	.tty.t mark set insert end
+	.tty.t see insert
+	.tty.t delete 1.0
+}
+
+proc tnl {} {
+	t "\n"
+	update
+	puts "TNL"
+	flush stdout
+}
+
+# Overall layout
+
+pack .tty -fill y -side left
+pack .drv -side top -fill x 
+
+proc dostdin {} {
+	global dkp0
+
+	if {[eof stdin]} {
+		exit 0
+	}
+	gets stdin a
+	eval $a
+}
+
+fileevent stdin readable dostdin
+
+#{puts "DKPFN0 ../DKP/002/__"}
+#{puts "DKPFN2 ../DKP/003/__"}
+#{puts "DKPFN0 ../FD/rc0000.dkp"}
+#{puts "DKPFN2 ../DKP/002/__"}
+#{puts "DKPFN3 ../DKP/003/__"}
+#{puts "DKPFN0 ../FD/rc0000.dkp"}
+#{puts "DKPFN0 ../DKP/000/__"}
+#{puts "DKPFN1 ../DKP/001/__"}
+set init {
+{puts "DKPFN0 ../FD/rc0000.dkp"}
+{puts "DKPFN1 ../decode34/__"}
+{puts "DKPFN2 ../DKP/002/__"}
+{puts "DKPFN3 ../DKP/003/__"}
+{puts "SW 32827"}
+{puts "RESET"}
+{puts "AUTOLOAD"}
+}
+
+after 1000 doinit
+
+proc doinit {} {
+	global init
+
+	set a [lindex $init 0]
+	set init [lrange $init 1 end]
+	puts stderr "INIT $a"
+	eval $a
+	if {$init != ""} {
+		after 1000 doinit
+	}
+}

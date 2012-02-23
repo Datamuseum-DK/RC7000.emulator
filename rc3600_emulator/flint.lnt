@@ -1,0 +1,21 @@
+-passes=3
+
+-e534	/* ignoring return value */
+
+-e818	/* could be const */
+
+-e715	/* param not used */
+-e728	/* no explicit initializer */
+-e732	/* loss of sign */
+-e734	/* loss of precision */
+-e744	/* switch has no default */
+
+-e506	/* Constant value boolean */
+-e774	/* if() always false */
+-e716	/* while (1) */
+
+-printf_code(j, int64_t)
+
+-function(exit,errx)
+-function(exit,err)
+

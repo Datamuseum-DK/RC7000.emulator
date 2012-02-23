@@ -1,0 +1,164 @@
+# ----------------------------------------------------------------------------
+# "THE BEER-WARE LICENSE" (Revision 42):
+# <phk@FreeBSD.ORG> wrote this file.  As long as you retain this notice you
+# can do whatever you want with this stuff. If we meet some day, and you think
+# this stuff is worth it, you can buy me a beer in return.   Poul-Henning Kamp
+# ----------------------------------------------------------------------------
+#
+# $Id: README,v 1.1 2005/02/23 22:29:58 phk Exp $
+
+
+0) WHAT IS THIS ?
+-----------------
+
+This directory contains the source code for a simulator of the
+RC3600/RC7000 computer from "Regnecentralen A/S".  The basic computer
+is a Data General Nova CPU but much of the I/O is unique to the RC
+version.
+
+1) PORTABILITY
+--------------
+
+This is written on FreeBSD 6.X in pretty generic C code.  I have
+undoubtedly used some FreeBSD specific features for convenience,
+but patches will be gladly accepted.
+
+2) ARCHITECTURAL NOTES
+----------------------
+
+The over all structure is a central core implementing the instruction
+set and the configuration mechanism and add on I/O drivers.
+
+A secondary channel is necessary to configure I/O devices in the
+simulation, for instance which files to load disk images from etc.
+
+The current version offers only a command-line interface, and access
+to the secondary channel is by typing CTRL-A (see below).
+
+The emulator offers a number of hooks for extension in addition to
+plugging I/O units in.  The most notable is the "trace" mechanism
+which allows a function to be called when the instruction in a
+particular core location is executed, or when a particular instruction
+is executed.
+
+The trace facility is currently used to implement "idle sleep" and
+message logging for the DOMUS operating system (see os_domus.c).
+
+3) USAGE
+--------
+
+Typically the emulator is started with a Diablo disk image:
+
+	rc3600 -c "dkp 0 load domus3.03.dkp"
+
+The terminal will behave like the console TTY on the RC3600.
+
+The -c argument is a command for the secondary channel, if during
+operation it is desirable to load another Diablo disk, this can
+be done by typing:
+
+	CTRL-A dkp 1 load domus2.01.dkp
+
+The emulator can be killed by typing CTRL-C.
+
+If given the -v argument, the emulator will print extensive
+per instruction tracing to stdout.  Good for debugging, bad
+for speed and disk-space.
+
+
+4) SECONDARY CHANNEL
+--------------------
+
+dkp <unit> load <filename>
+
+	Load contents of Diablo disk.
+
+dkp <unit> save <filename>
+
+	Save contents of Diablo disk.   This must always be done
+	explictly.
+
+cpu switch <value>
+
+	Set the frontpanel switches.  Value is specivied in C
+	notation:
+		cpu switch 32827     (decimal)
+		cpu switch 0x803b    (hex))
+		cpu switch 0100073   (octal))
+
+cpu autoload
+
+	Boot the system from the device indicated by the front panel
+	switches.
+	
+domus sleep
+
+	Recognize location 50 as idle system and avoid soaking up
+	CPU on the host system emulating no activity.
+
+domus msg <filename>
+
+	Trace SENDMESSAGE and SENDANSWER and log messages passed
+	in the file given.
+
+
+5) I/O EMULATION
+----------------
+
+TTY
+
+	Takes input from stdin, tries to put the terminal in raw mode
+	if possible.  Output to stderr.
+
+PTP
+	Punches to file "_.ptp"
+	(XXX: should be configured via secondary channel).
+
+PTR
+	Reads from file "_.ptr"
+	(XXX: should be configured via secondary channel).
+
+LPT
+	Prints to file "/tmp/_.lpt"
+	(XXX: should be configured via secondary channel).
+
+FLOPPY
+	Not currently working.
+
+MAGIC
+	A cheat device for transferring files to or from the local
+	filesystem.
+
+	Not currently working.
+
+DKP
+	Four drives.  Contents loaded and saved via secondary channel.
+
+RTC
+	Implements four rates as per documentation.
+
+6) HINTS
+--------
+
+The easiest way to transfer files to and from the DOMUS system
+is using the PTP and PTR devices.  Use $PTRN and $PTPN inside
+DOMUS.
+
+It is possible to script the emulator, but the commands have
+to be paced in order to not get lost:
+
+	#!/bin/sh
+
+	set -e 
+	(
+	echo 
+	echo PTP
+	sleep 1
+	echo PTR
+	sleep 1
+	echo DELET PH00B
+	sleep 1
+	echo 'DOMAC BIN.PH00B LIST.$PTPN $PTRN'
+	sleep 10
+	) | ./rc3600 -c "dkp 0 load domus3.03.dkp"
+

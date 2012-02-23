@@ -1,0 +1,50 @@
+
+Args:
+	--device <unit>:<type>
+	--mount <device>:<file>
+
+	--telnet
+		fd#0/fd#1 runs telnet protocol.
+
+	--backend
+		fd#0/fd#1 runs GUI protocol
+
+	--rc6000
+
+	--domus
+
+	--autoload <device>
+
+	--telnet
+		raw mode
+
+
+
+
+TELNET MODE
+
+
+	telnet foo 3600
+
+	RC3600 emulator
+	Escape character is CTRL-A
+	Config: --device dkp --mount ro:dkp:demo.dkp --domus --telnet
+	Enter "autoboot" to start...
+	rc3600> login phk
+	enter password: XXX
+	rc3600:phk> mount rw:dkp:phk.dkp
+	rc3600:phk> autoboot
+	SYSTEM:
+
+	DOMUS 03.03
+	>S 
+
+	rc3600:phk> mount ptp:myfile
+	rc3600:phk>
+	TYPE S3600 $PTP
+	rc3600:phk> mail myfile
+
+
+CLI MODE
+
+	rc3600 -c "dkp 0 read foo.dkp" -c "cpu switch 0100073" -c "cpu autoload"

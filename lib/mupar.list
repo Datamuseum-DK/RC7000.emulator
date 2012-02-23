@@ -1,0 +1,1010 @@
+01              
+02              
+03              ;                                               RCSL  : 43-GL9000
+04              
+05              
+06              
+07              ;                                               AUTHER: MLM
+08              
+09              
+10              
+11              ;                                               EDITED: 79.05.23
+12              
+13              
+14              
+15              
+16              
+17              
+18              
+19              
+20              
+21              
+22              
+23              
+24              
+25              
+26              
+27              ;                       MUPAR.02
+28              
+29              
+30              
+31              
+32              
+33              
+34              
+35              
+36              
+37              
+38              
+39              
+40              
+41              
+42              
+43              
+44              
+45              
+46              
+47              ;KEYWORDS:      RC3600, MONITOR, USER SYMBOLS.
+48              
+49              
+50              
+51              ;ABSTRACT:      RC3600 MONITOR USER SYMBOL DEFINITIONS.
+52              
+53              
+54              
+55              
+56              
+57              
+58              
+59              
+60              
+ 0002 MUPAR
+01              
+02              
+03              
+04              
+05              
+06              
+07              
+08              
+09              
+10              
+11              ; ASCII PAPER TAPE: RCSL:43-GL8999
+12              
+!0003 MUPAR
+01              
+02              
+                .TITL MUPAR
+04              
+05       000012 .RDX 10
+06              
+07         0010 .RDXO 16
+08              
+09              ;   ******   FORMAT DEFINITIONS   ******
+10              
+11                                    ; ITEM:
+12              
+13         0000 .DUSR NEXT= 0         ;   NEXT ITEM IN A QUEUE OF ITEMS
+14              
+15         0001 .DUSR PREV= NEXT+1    ;   PREVIOUS ITEM IN A QUEUE OF ITEMS
+16              
+17         0002 .DUSR CHAIN=PREV+1    ;   NEXT ITEM IN A CHAIN OF ITEMS
+18              
+19         0003 .DUSR SIZE= CHAIN+1   ;   SIZE OF THE ITEM
+20              
+21         0004 .DUSR NAME= SIZE+1    ;   NAME OF THE ITEM (THREE WORDS)
+22              
+23              
+24              
+25                                    ; PROCESS DESCRIPTOR:
+26              
+27              ;     NEXT            ;   NEXT PROCESS IN A QUEUE OF PROCESSES
+28              
+29              ;     PREV            ;   PREVIOUS PROCESS IN A QUEUE OF PROCESSES
+30              
+31              ;     CHAIN           ;   NEXT PROCESS IN THE PROCESS CHAIN
+32              
+33              ;     SIZE            ;   SIZE OF THE PROCESS DESCRIPTOR
+34              
+35              ;     NAME            ;   NAME OF THE PROCESS (THREE WORDS)
+36              
+37         0007 .DUSR EVENT=NAME+3    ;   EVENT QUEUE HEAD (TWO WORDS)
+38              
+39         0009 .DUSR BUFFE=EVENT+2   ;   FREE MESSAGE BUFFER CHAIN HEAD
+40              
+41         000A .DUSR PROG= BUFFE+1   ;   PROGRAM ADDRESS
+42              
+43         000B .DUSR STATE=PROG+1    ;   STATE OF PROCESS
+44              
+45         000C .DUSR TIMER=STATE+1   ;   TIMER COUNT
+46              
+47         000D .DUSR PRIOR=TIMER+1   ;   PRIORITY
+48              
+49         000E .DUSR BREAD=PRIOR+1   ;   BREAK ADDRESS
+50              
+51         000F .DUSR AC0=  BREAD+1   ;   SAVED AC0
+52              
+53         0010 .DUSR AC1=  AC0+1     ;   SAVED AC1
+54              
+55         0011 .DUSR AC2=  AC1+1     ;   SAVED AC2
+56              
+57         0012 .DUSR AC3=  AC2+1     ;   SAVED AC3
+58              
+59         0013 .DUSR PSW=  AC3+1     ;   PSW (PROCESS STATUS WORD)
+60              
+ 0004 MUPAR
+01         0014 .DUSR SAVE= PSW+1     ;   SAVED LINK
+02              
+03         0015 .DUSR O=    SAVE+1    ; OPTIONAL WORDS:
+04              
+05              
+06              
+07              ; INTERPRETER PROCESSES
+08              
+09         0015 .DUSR SAVE1=O         ; WORK LOC.
+10              
+11         0016 .DUSR SAVE2=SAVE1+1   ;  -
+12              
+13         0017 .DUSR SAVE3=SAVE2+1   ;  -
+14              
+15         0018 .DUSR SAVE4=SAVE3+1   ;  -
+16              
+17         0019 .DUSR SAVE5=SAVE4+1   ;  -
+18              
+19         001A .DUSR R=    SAVE5+1   ; PSEUDO ACCUMOLATOR
+20              
+21         001B .DUSR PC=   R+1       ; PSEUDO PC
+22              
+23         001C .DUSR OP=   PC+1      ; OPERATOR MESSAGE
+24              
+25         001D .DUSR .OPER=OP+1      ; OPERATOR NAME ADDRESS
+26              
+27         0021 .DUSR ZN=.OPER+4      ; FIRST FILE DESCR. ENTRY ADDRESS
+28              
+29              
+30              
+31              ; DRIVER PROCESSES
+32              
+33         0015 .DUSR BUF=  O         ;   SAVED MESSAGE BUFFER ADDRESS
+34              
+35         0016 .DUSR ADDRE=BUF+1     ;   CURRENT VALUE OF ADDRESS
+36              
+37         0017 .DUSR COUNT=ADDRE+1   ;   CURRENT VALUE OF COUNT
+38              
+39         0018 .DUSR RESER=COUNT+1   ;   RESERVER
+40              
+41         0019 .DUSR CONVT=RESER+1   ;   CONVERSION TABLE ADDRESS
+42              
+43         001A .DUSR CLINT=CONVT+1   ;   CLEAR DEVICE INTERRUPT
+44              
+45              
+46              
+47              
+48              
+49              
+50              
+!0005 MUPAR
+01              
+02              
+03              ; COROUTINE PROCESSES
+04              
+05         0021 .DUSR CCOROUT=ZN      ; CURRENT COROUTINE
+06              
+07         0022 .DUSR LATIME=CCORO+1  ; LATEST ACTIVATION TIME
+08              
+09         0023 .DUSR HACTIVE=LATIM+1 ; HEAD OF ACTIVE QUEUE
+10              
+11         0024 .DUSR HANSWER=HACTI+1 ; HEAD OF ANSWER QUEUE
+12              
+13         0025 .DUSR HDELAY=HANSW+1  ; HEAD OF DELAY QUEUE
+14              
+15         0026 .DUSR TRETURN=HDELA+1 ; RETURN FROM TEST
+16              
+17         0027 .DUSR TRECORD=TRETU+1 ; TEST RECORD START
+18              
+19         0028 .DUSR CDEVICE= TRECO+1; DEVICE NUMBER
+20              
+21         0029 .DUSR MSEM=CDEVIC+1   ; MESSAGE SEM
+22              
+23         002A .DUSR MCOROUT=MSEM+1  ; MESSAGE COROUTINE
+24              
+25         002B .DUSR CUDEX=MCOROUT+1 ; USER DEFINED EXIT
+26              
+27         002C .DUSR CBUFFER=CUDEX+1 ; COROUTINE BUFFER
+28              
+29              
+30              
+31                                    ; MESSAGE BUFFER:
+32              
+33              ;     NEXT            ;   NEXT BUFFER IN A QUEUE OF BUFFERS
+34              
+35              ;     PREV            ;   PREVIOUS BUFFER IN A QUEUE OF BUFFERS
+36              
+37              ;     CHAIN           ;   NEXT BUFFER IN A CHAIN OF BUFFERS
+38              
+39              ;     SIZE            ;   SIZE OF THE MESSAGE BUFFER
+40              
+41         0004 .DUSR SENDE=SIZE+1    ;   SENDER PROCESS DESCRIPTOR
+42              
+43         0005 .DUSR RECEI=SENDE+1   ;   RECEIVER PARAMETER
+44              
+45         0006 .DUSR MESS0=RECEI+1   ;   0.MESSAGE
+46              
+47         0007 .DUSR MESS1=MESS0+1   ;   1.MESSAGE
+48              
+49         0008 .DUSR MESS2=MESS1+1   ;   2.MESSAGE
+50              
+51         0009 .DUSR MESS3=MESS2+1   ;   3.MESSAGE
+52              
+53         000A .DUSR BSIZE=MESS3+1   ;   SIZE OF MESSAGE BUFFER
+54              
+55              
+56              
+57                                    ; PROGRAM DESCRIPTOR:
+58              
+59         0000 .DUSR PSPEC=0         ;   SPECIFICATION OF PROGRAM:
+60              
+ 0006 MUPAR
+01                                    ;    B0: OWN
+02              
+03                                    ;    B1: REENTRANT
+04              
+05                                    ;    B2: PAGE ZERO USER
+06              
+07                                    ;    B3: RESERVABLE
+08              
+09                                    ;    B(8:15) PROCESS COUNT
+10              
+11         0001 .DUSR PSTAR=PSPEC+1   ;   START ADDRESS
+12              
+13              ;     CHAIN           ;   NEXT PROGRAM IN A CHAIN OF PROGRAMS
+14              
+15              ;     SIZE            ;   SIZE OF THE PROGRAM AREA
+16              
+17              ;     NAME            ;   NAME OF THE PROGRAM (THREE WORDS)
+18              
+19              
+20              
+21              ;                     ; COROUTINE DESCRIPTOR:
+22              
+23         FFFF .DUSR CIDENT=NEXT-1   ;   IDENTIFICATION
+24              
+25         FFFE .DUSR OPMASK=CIDENT-1 ; WAIT MASK
+26              
+27              ;     NEXT            ;   LINK TO NEXT COROUTINE
+28              
+29         0001 .DUSR CEXIT=NEXT+1    ;   SAVED EXIT ADDRESS
+30              
+31         0002 .DUSR CLATOP=CEXIT+1  ;   SAVED OPERATION
+32              
+33         0003 .DUSR CRETUR=CLATO+1  ;   SAVED RETURN
+34              
+35         0004 .DUSR CAC1S=CRETU+1   ;   SAVED AC1
+36              
+37              
+38              
+39         001E .DUSR TLENGTH=30      ; LENGTH OF TEST RECORD
+40              
+41              
+42              
+43              
+44              
+!0007 MUPAR
+01                                    ; ZONE DESCRIPTOR:
+02              
+03         0000 .DUSR ZNAME=0         ;   NAME (THREE WORDS)
+04              
+05              ;     SIZE            ;   SIZE OF THE ZONE DESCRIPTOR
+06              
+07         0004 .DUSR ZMODE=SIZE+1    ;   MODE OF OPERATION
+08              
+09         0005 .DUSR ZKIND=ZMODE+1   ;   KIND OF DOCUMENT
+10              
+11         0006 .DUSR ZMASK=ZKIND+1   ;   MASK FOR GIVE UP
+12              
+13         0007 .DUSR ZGIVE=ZMASK+1   ;   GIVE UP ADDRESS
+14              
+15         0008 .DUSR ZFILE=ZGIVE+1   ;   FILE COUNT
+16              
+17         0009 .DUSR ZBLOC=ZFILE+1   ;   BLOCK COUNT
+18              
+19         000A .DUSR ZCONV=ZBLOC+1   ;   CONVERSION TABLE ADDRESS
+20              
+21         000B .DUSR ZBUFF=ZCONV+1   ;   BUFFER ADDRESS
+22              
+23         000C .DUSR ZSIZE=ZBUFF+1   ;   SIZE OF BUFFER
+24              
+25         000D .DUSR ZFORM=ZSIZE+1   ;   FORMAT OF RECORD
+26              
+27         000E .DUSR ZLENG=ZFORM+1   ;   LENGTH OF RECORD
+28              
+29         000F .DUSR ZFIRS=ZLENG+1   ;   FIRST OF RECORD (BYTE ADDRESS)
+30              
+31         0010 .DUSR ZTOP= ZFIRS+1   ;   TOP OF RECORD (BYTE ADDRESS)
+32              
+33         0011 .DUSR ZUSED=ZTOP+1    ;   USED SHARE
+34              
+35         0012 .DUSR ZSHAR=ZUSED+1   ;   SHARE LENGTH (IN BYTES)
+36              
+37         0013 .DUSR ZREM= ZSHAR+1   ;   REMAINING BYTES IN SHARE
+38              
+39                                    ; AUXILLIARY WORDS:
+40              
+41         0014 .DUSR Z0=   ZREM+1    ;   AUX 0
+42              
+43         0015 .DUSR Z1=   Z0+1      ;   AUX 1
+44              
+45         0016 .DUSR Z2=   Z1+1      ;   AUX 2
+46              
+47         0017 .DUSR Z3=   Z2+1      ;   AUX 3
+48              
+49         0018 .DUSR Z4=   Z3+1      ;   AUX 4
+50              
+51         0019 .DUSR Z5=   Z4+1      ;   AUX 5
+52              
+53         0006 .DUSR ZAUX= 6         ;   NUMBER OF AUXILLIARY WORDS
+54              
+55         001A .DUSR Z=    Z0+ZAUX   ; OPTIONAL WORDS:
+56              
+57              
+58              
+59                                    ; SHARE DESCRIPTOR:
+60              
+ 0008 MUPAR
+01         0000 .DUSR SOPER=0         ;   OPERATION (0.MESSAGE)
+02              
+03         0001 .DUSR SCOUN=SOPER+1   ;   COUNT (1.MESSAGE)
+04              
+05         0002 .DUSR SADDR=SCOUN+1   ;   ADDRESS (2.MESSAGE)
+06              
+07         0003 .DUSR SSPEC=SADDR+1   ;   SPECIAL (3.MESSAGE)
+08              
+09         0004 .DUSR SNEXT=SSPEC+1   ;   NEXT SHARE
+10              
+11         0005 .DUSR SSTAT=SNEXT+1   ;   STATE OF SHARE
+12              
+13         0006 .DUSR SFIRS=SSTAT+1   ;   FIRST SHARED (BYTE ADDRESS)
+14              
+15         0007 .DUSR SSIZE=SFIRS+1   ;   SIZE OF SHARE DESCRIPTOR
+16              
+17              
+18              
+19              ;   ******   END OF FORMAT DEFINITIONS   ******
+20              
+21              
+22              
+23              
+24              
+25              
+26              
+!0009 MUPAR
+01              ;   ******   MONITOR FUNCTION ENTRIES   ******
+02              
+03              
+04              
+05         0002  .LOC 2
+06              
+07              
+08              
+09         0C02 .DUSR WAIT=            JSR@   .
+10              
+11         0C03 .DUSR WAITINTERRUPT=   JSR@   .+1
+12              
+13         0C04 .DUSR SENDMESSAGE=     JSR@   .+2
+14              
+15         0C05 .DUSR WAITANSWER=      JSR@   .+3
+16              
+17         0C06 .DUSR WAITEVENT=       JSR@   .+4
+18              
+19         0C07 .DUSR SENDANSWER=      JSR@   .+5
+20              
+21         0C08 .DUSR SEARCHITEM=      JSR@   .+6
+22              
+23         0C09 .DUSR CLEANPROCESS=    JSR@   .+7
+24              
+25         0C0A .DUSR BREAKPROCESS=    JSR@   .+8
+26              
+27         0C0B .DUSR STOPPROCESS=     JSR@   .+9
+28              
+29         0C0C .DUSR STARTPROCESS=    JSR@   .+10
+30              
+31         0C0D .DUSR RECHAIN=         JSR@   .+11
+32              
+33              
+34              
+35              ;   ******   END OF MONITOR FUNCTION ENTRIES   ******
+36              
+37              
+38              
+39              
+40              
+41              
+42              
+!0010 MUPAR
+01         0020 .LOC 32
+02              
+03         0020 .DUSR M=    .     ; START OF MONITOR PROCESS DESCRIPTOR
+04              
+05         0020 .DUSR CUR=  .     ;
+06              
+07         0025 .DUSR TABLE=.+5 ; DEVICE TABLE
+08              
+09         0026 .DUSR TOPTA=.+6 ; TOP OF DEVICE TABLE
+10              
+11         002A .DUSR PFIRS=.+10        ; FIRST IN PROCESS CHAIN
+12              
+13         002C .DUSR RUNNI=.+12        ; RUNNING QUEUE
+14              
+15         002C .DUSR PROCE=RUNNI ;        REFERENCE TO HEAD OF RUNNING QUEUE AND
+16              
+17         002C .DUSR MONIT=RUNNI ;        HEAD OF PROCESS CHAIN: MONITOR PROCESS.
+18              
+19         002E .DUSR EXIT=.+14 ; BREAD: MONITOR EXIT
+20              
+21         002F .DUSR EFIRS=.+15        ; FIRST IN FREE CORE
+22              
+23         0030 .DUSR FFIRS=.+16        ; LAST IN FREE CORE
+24              
+25         0031 .DUSR DELAY=.+17        ; DELAY QUEUE
+26              
+27         0034 .DUSR AREAP=.+20     ;   HEAD OF AREA PROCESS CHAIN
+28              
+29         0035 .DUSR AFIRS=.+21     ;   FIRST IN AREA PROCESS CHAIN
+30              
+31              
+32              
+33              
+34              
+35              
+36              
+37              ; PAGE ZERO VARIABLES:
+38              
+39              
+40              
+41         0036 .LOC 54
+42              
+43         0036 .DUSR FREQU=.     ; FREQUENCY OF RTC:
+44              
+45         0037 .DUSR MASK= .+1     ; INTERRUPT MASK
+46              
+47         0038 .DUSR CORES=.+2     ; CORE SIZE
+48              
+49         0039 .DUSR PROGR=.+3     ; REF. TO HEAD OF PROGRAM CHAIN
+50              
+51         003C .DUSR RTIME=    .+6     ; REAL TIME COUNT
+52              
+53         003E .DUSR POWIN=    .+8     ; POWER INTERRUPT COUNT
+54              
+55         003F .DUSR CDUMP=.+9     ;  CORE DUMP ENTRY
+56              
+57         0040 .DUSR CPUTY=.+10    ;  CPU TYPE:        0: 3603
+58              
+59                                  ;                   1: 3703
+60              
+ 0011 MUPAR
+01                                  ;                   2: 3803
+02              
+03                                  ;                   3 3703 WITH '3803-FEATURE'
+04              
+05                                  ;                   4: 3603 WITH '3803-FEATURE'
+06              
+07              
+08              
+09              ; PAGE ZERO CONSTANTS:
+10              
+11              
+12              
+13         0041 .LOC 65
+14              
+15         0041 .DUSR  BIT=     .       ;1B0
+16              
+17         0041 .DUSR .1B0=     .       ;1B0
+18              
+19         0042 .DUSR .1B1=     .+1     ;1B1
+20              
+21         0043 .DUSR .1B2=     .+2     ;1B2
+22              
+23         0044 .DUSR .1B3=     .+3     ;1B3
+24              
+25         0045 .DUSR .1B4=     .+4     ;1B4
+26              
+27         0046 .DUSR .1B5=     .+5     ;1B5
+28              
+29         0047 .DUSR .1B6=     .+6     ;1B6
+30              
+31         0048 .DUSR .1B7=     .+7     ;1B7
+32              
+33         0049 .DUSR .1B8=     .+8     ;1B8
+34              
+35         004A .DUSR .1B9=     .+9     ;1B9
+36              
+37         004B .DUSR .1B10=    .+10    ;1B10
+38              
+39         004C .DUSR .1B11=    .+11    ;1B11
+40              
+41         004D .DUSR .1B12=    .+12    ;1B12
+42              
+43         004E .DUSR .1B13=    .+13    ;1B13
+44              
+45         004F .DUSR .1B14=    .+14    ;1B14
+46              
+47         0050 .DUSR .1B15=    .+15    ;1B15
+48              
+49              
+50              
+51              
+52              
+!0012 MUPAR
+01              ; STATUS BITS:
+02              
+03              
+04              
+05         0041 .DUSR SDISC=.1B0     ; DISCONNECTED
+06              
+07         0042 .DUSR SOFFL=.1B1     ; OFF LINE
+08              
+09         0043 .DUSR SBUSY=.1B2     ; BUSY
+10              
+11         0044 .DUSR SDEV1=.1B3     ; DEVICE MODE 1
+12              
+13         0045 .DUSR SDEV2=.1B4     ; DEVICE MODE 2
+14              
+15         0046 .DUSR SDEV3=.1B5     ; DEVICE MODE 3
+16              
+17         0047 .DUSR SILLE=.1B6     ; ILLEGAL
+18              
+19         0048 .DUSR SEOF= .1B7     ; EOF
+20              
+21         0049 .DUSR SBLOC=.1B8     ; BLOCK ERROR
+22              
+23         004A .DUSR SDATA=.1B9     ; DATA LATE
+24              
+25         004B .DUSR SPARI=.1B10    ; PARITY ERROR
+26              
+27         004C .DUSR SEM=  .1B11    ; END MEDIUM
+28              
+29         004F .DUSR STIME=.1B14    ; TIMER
+30              
+31              
+32              
+33              ; CONTROL BITS:
+34              
+35              
+36              
+37         0049 .DUSR CERAS=.1B8     ; ERASURE
+38              
+39         004A .DUSR CDISC=.1B9     ; DISCONNECT
+40              
+41         004B .DUSR CPOSI=.1B10    ; POSITIONING
+42              
+43         004C .DUSR CTERM=.1B11    ; TERMINATION
+44              
+45         004D .DUSR CCONV=.1B12    ; CONVERSION
+46              
+47         004E .DUSR CRESE=.1B13    ; RESERVATION
+48              
+49              
+50              
+!0013 MUPAR
+01              
+02              
+03         0051 .LOC 81
+04              
+05         002D .DUSR .0=      PRIORITY+M
+06              
+07         0050 .DUSR .1=     .1B15
+08              
+09         004F .DUSR .2=     .1B14
+10              
+11         0051 .DUSR .3=      .
+12              
+13         004E .DUSR .4=     .1B13
+14              
+15         0052 .DUSR .5=      .+1
+16              
+17         0053 .DUSR .6=      .+2
+18              
+19         0054 .DUSR .7=      .+3
+20              
+21         004D .DUSR .8=     .1B12
+22              
+23         0055 .DUSR .9=      .+4
+24              
+25         0056 .DUSR .10=     .+5
+26              
+27         0057 .DUSR .12=     .+6
+28              
+29         0058 .DUSR .13=     .+7
+30              
+31         0059 .DUSR .15=     .+8
+32              
+33         004C .DUSR .16=    .1B11
+34              
+35         005A .DUSR .24=     .+9
+36              
+37         005B .DUSR .25=     .+10
+38              
+39         004B .DUSR .32=    .1B10
+40              
+41         005C .DUSR .40=     .+11
+42              
+43         005D .DUSR .48=     .+12
+44              
+45         005E .DUSR .56=     .+13
+46              
+47         005F .DUSR .60=     .+14
+48              
+49         0060 .DUSR .63=     .+15
+50              
+51         004A .DUSR .64=    .1B9
+52              
+53         0061 .DUSR .120=    .+16
+54              
+55         0062 .DUSR .127=    .+17
+56              
+57         0049 .DUSR .128=   .1B8
+58              
+59         0063 .DUSR .255=    .+18
+60              
+ 0014 MUPAR
+01         0048 .DUSR .256=   .1B7
+02              
+03         0047 .DUSR .512=   .1B6
+04              
+05         0046 .DUSR .1024=  .1B5
+06              
+07         0045 .DUSR .2048=  .1B4
+08              
+09         0044 .DUSR .4096=  .1B3
+10              
+11         0043 .DUSR .8192=  .1B2
+12              
+13         0042 .DUSR .16384= .1B1
+14              
+15         0041 .DUSR .32768= .1B0
+16              
+17         0064 .DUSR .M3=     .+19
+18              
+19         0065 .DUSR .M4=     .+20
+20              
+21         0066 .DUSR .M16=    .+21
+22              
+23         0067 .DUSR .M256=   .+22
+24              
+25              
+26              
+27         004E .DUSR .NAME=.4    ; NAME.PROC
+28              
+29         0054 .DUSR .EVEN=.7    ; EVENT.PROC
+30              
+31         0054 .DUSR .EDOC=.EVEN ; DOCUMENT.ENTRY
+32              
+33         0053 .DUSR .MESS=.6    ; MESS.BUF
+34              
+35         0054 .DUSR .SSIZ=.7    ; SIZE OF SHARE DESCRIPTOR
+36              
+37         0068 .DUSR .Z=   104     ; OPTIONAL.ZONE
+38              
+39         0057 .DUSR .RTC= .12   ; RTC DEVICE NUMBER
+40              
+41         0056 .DUSR .NL=  .10   ;
+42              
+43         0056 .DUSR .LF=  .10   ;
+44              
+45         0058 .DUSR .CR=  .13   ;
+46              
+47         0057 .DUSR .FF=  .12   ;
+48              
+49         004A .DUSR CUR2=.64    ; MONITOR PROCESS*2
+50              
+51              
+52              
+53              
+54              
+55              
+56              
+!0015 MUPAR
+01              ; REFERENCES TO REENTRANT SYSTEM UTILITY PROCEDURES:
+02              
+03              
+04              
+05         0074  .LOC 116
+06              
+07              
+08              
+09         0C74 .DUSR NEXTOPERATION=   JSR@   .
+10              
+11         0C77 .DUSR WAITOPERATION=   JSR@   .+3
+12              
+13         0C75 .DUSR RETURNANSWER=    JSR@   .+1
+14              
+15         0C78 .DUSR SETINTERRUPT=    JSR@   .+4
+16              
+17         0C79 .DUSR SETRESERVATION=  JSR@   .+5
+18              
+19         0C7A .DUSR SETCONVERSION=   JSR@   .+6
+20              
+21         0C7B .DUSR CONBYTE=         JSR@   .+7
+22              
+23         0C7C .DUSR GETBYTE=         JSR@   .+8
+24              
+25         0C7D .DUSR PUTBYTE=         JSR@   .+9
+26              
+27         0C7E .DUSR MULTIPLY=        JSR@   .+10
+28              
+29         0C7F .DUSR DIVIDE=          JSR@   .+11
+30              
+31              
+32              
+33         0474 .DUSR .NEXTOPERATION=  JMP@   .
+34              
+35         0475 .DUSR .RETURNANSWER=   JMP@   .+1
+36              
+37         0476 .DUSR .CLEARDEVICE=    JMP@   .+2
+38              
+39         8076 .DUSR CLEAR= @.+2
+40              
+41         0478 .DUSR .SETINTERRUPT=   JMP@   .+4
+42              
+43         0479 .DUSR .SETRESERVATION= JMP@   .+5
+44              
+45         047A .DUSR .SETCONVERSION=  JMP@   .+6
+46              
+47         047B .DUSR .CONBYTE=        JMP@   .+7
+48              
+49         047C .DUSR .GETBYTE=        JMP@   .+8
+50              
+51         047D .DUSR .PUTBYTE=        JMP@   .+9
+52              
+53         047E .DUSR .MULTIPLY=       JMP@   .+10
+54              
+55         047F .DUSR .DIVIDE=         JMP@   .+11
+56              
+57              
+58              
+59              
+60              
+ 0016 MUPAR
+01              
+02              
+03         0C00 .DUSR GOS=   JSR@   0
+04              
+05         0400 .DUSR GOT=   JMP@   0
+06              
+!0017 MUPAR
+01              ; REFERENCES TO REENTRANT INPUT/OUTPUT UTILITY PROCEDURES:
+02              
+03              
+04              
+05         0080  .LOC 128
+06              
+07              
+08              
+09         0C9A .DUSR BINDEC=          JSR@   .+26
+10              
+11         0C9B .DUSR DECBIN=          JSR@   .+27
+12              
+13         0C80 .DUSR GETREC=          JSR@   .
+14              
+15         0C81 .DUSR PUTREC=          JSR@   .+1
+16              
+17         0C82 .DUSR WAITTRANSFER=    JSR@   .+2
+18              
+19         0C84 .DUSR TRANSFER=        JSR@   .+4
+20              
+21         0C85 .DUSR INBLOCK=         JSR@   .+5
+22              
+23         0C86 .DUSR OUTBLOCK=        JSR@   .+6
+24              
+25         0C87 .DUSR INCHAR=          JSR@   .+7
+26              
+27         0C88 .DUSR FREESHARE=       JSR@   .+8
+28              
+29         0C89 .DUSR OUTSPACE=        JSR@   .+9
+30              
+31         0C8A .DUSR OUTCHAR=         JSR@   .+10
+32              
+33         0C8B .DUSR OUTNL=           JSR@   .+11
+34              
+35         0C8C .DUSR OUTEND=          JSR@   .+12
+36              
+37         0C8D .DUSR OUTTEXT=         JSR@   .+13
+38              
+39         0C8E .DUSR OUTOCTAL=        JSR@   .+14
+40              
+41         0C8F .DUSR SETPOSITION=     JSR@   .+15
+42              
+43         0C90 .DUSR CLOSE=           JSR@   .+16
+44              
+45         0C91 .DUSR OPEN=            JSR@   .+17
+46              
+47         0C93 .DUSR INNAME=          JSR@   .+19
+48              
+49         0C92 .DUSR WAITZONE=        JSR@   .+18
+50              
+51         0C94 .DUSR MOVE=            JSR@   .+20
+52              
+53         0C95 .DUSR INTPRETE=        JSR@   .+21
+54              
+55              
+56              
+57              
+58              
+59              
+60              
+ 0018 MUPAR
+01         0480 .DUSR .GETREC=         JMP@   .
+02              
+03         0481 .DUSR .PUTREC=         JMP@   .+1
+04              
+05         0482 .DUSR .WAITTRANSFER=   JMP@   .+2
+06              
+07         0483 .DUSR .REPEATSHARE=    JMP@   .+3
+08              
+09         0484 .DUSR .TRANSFER=       JMP@   .+4
+10              
+11         0485 .DUSR .INBLOCK=        JMP@   .+5
+12              
+13         0486 .DUSR .OUTBLOCK=       JMP@   .+6
+14              
+15         0488 .DUSR .FREESHARE=      JMP@   .+8
+16              
+17         0487 .DUSR .INCHAR=         JMP@   .+7
+18              
+19         0489 .DUSR .OUTSPACE=       JMP@   .+9
+20              
+21         048A .DUSR .OUTCHAR=        JMP@   .+10
+22              
+23         048B .DUSR .OUTNL=          JMP@   .+11
+24              
+25         048C .DUSR .OUTEND=         JMP@   .+12
+26              
+27         048D .DUSR .OUTTEXT   =     JMP@   .+13
+28              
+29         048E .DUSR .OUTOCTAL=       JMP@   .+14
+30              
+31         048F .DUSR .SETPOSITION=    JMP@   .+15
+32              
+33         0490 .DUSR .CLOSE=          JMP@   .+16
+34              
+35         0491 .DUSR .OPEN=           JMP@   .+17
+36              
+37              
+38              
+39         0096 .DUSR INTGIVEUP=              .+22
+40              
+41         0098 .DUSR INTBREAK=               .+24
+42              
+43              
+44              
+45         009C .DUSR MZSTART=156            ;  INTERPRETER PAGE ZERO START:
+46              
+47              
+48              
+49         00DA .LOC 218
+50              
+51         0CDA .DUSR NEWCAT=           JSR@   .
+52              
+53         0CDB .DUSR FREECAT=          JSR@   .+1
+54              
+55              
+56              
+57              ; COROUTINE MONITOR ENTRIES
+58              
+59              ;
+60              
+ 0019 MUPAR
+01         00DC  .LOC 220
+02              
+03         000F .DUSR COROU=15           ; CURRENT COROUTINE
+04              
+05         0CDC .DUSR CDELAY=JSR@   .    ; DELAY(TIME)
+06              
+07         0CDD .DUSR WAITSE=JSR@   .+1    ; WAITSEM(SEMAPHORE)
+08              
+09         0CDE .DUSR WAITCH=JSR@   .+2    ; WAITCHAINED(SEMAPHORE)
+10              
+11         0CDF .DUSR CWANSW=JSR@   .+3    ; WAITANSWER(BUF)
+12              
+13         0CE0 .DUSR CTEST =JSR@   .+4    ; TESTOUT REGISTERS
+14              
+15         0CE1 .DUSR CPRINT=JSR@   .+5    ; TESTOUT RECORD
+16              
+17         0CE2 .DUSR CTOUT =JSR@   .+6    ; TESTGENERAL
+18              
+19         0CE3 .DUSR SIGNAL=JSR@   .+7    ; SIGNAL(SEMAPHORE);
+20              
+21         0CE4 .DUSR SIGCH =JSR@   .+8    ; SIGNAL CHAINEDD(SEMAPHORE)
+22              
+23         0CE5 .DUSR CPASS =JSR@   .+9    ; PASS
+24              
+!0020 MUPAR
+01              ; FILE SYSTEM ENTRIES
+02              
+03              
+04              
+05         00E6 .LOC 230
+06              
+07         0CE6 .DUSR CREATEENTRY=JSR@ .  ;
+08              
+09         0CE7 .DUSR LOOKUPENTRY=JSR@ .+1  ;
+10              
+11         0CE8 .DUSR CHANGEENTRY=JSR@ .+2  ;
+12              
+13         0CE9 .DUSR REMOVEENTRY=JSR@ .+3  ;
+14              
+15         0CEA .DUSR INITCATALOG=JSR@ .+4  ;
+16              
+17         0CEB .DUSR SETENTRY=  JSR@ .+5  ;
+18              
+19              
+20              
+21              ; PAGE SYSTEM ENTRIES
+22              
+23              
+24              
+25         00EC .LOC .+6
+26              
+27         0CEC .DUSR COMON   = JSR@ .          ; COROUTINE MONITOR
+28              
+29         0CED .DUSR CALL    = JSR@ .+1
+30              
+31         0CEE .DUSR GOTO    = JSR@ .+2
+32              
+33         0CEF .DUSR GETADR  = JSR@ .+3
+34              
+35         0CF0 .DUSR GETPOINT= JSR@ .+4
+36              
+37         000C .DUSR PWSIZE  = 12   ; NO OF WORKING LOCATIONS PR PROGRAM
+38              
+39         0006 .DUSR PCWSIZE =  6   ; NO OF WORKING LOCATIONS PR COROUTINE
+40              
+41              
+42              
+43              ; HEAD OF CORE CHAIN
+44              
+45         00F1 .DUSR CORE    =  .+5
+46              
+47         00F2 .DUSR COMLIST =  .+6    ; ADDR OF PROC XCOMX ENTRYLIST
+48              
+49         00F3 .DUSR COMNO   =  .+7    ; NO OF ENTRYS IN COMLIST
+50              
+51              
+52              
+53              
+54              
+55              ; EXTENDED COROUTINE MONITOR ENTRIES
+56              
+57              ;
+58              
+59              
+60              
+ 0021 MUPAR
+01              ;
+02              
+03              ;
+04              
+05         00F4 .LOC 244
+06              
+07         0CF4 .DUSR CSENDM=JSR@   .   ;
+08              
+09         0CF5 .DUSR SIGGEN=JSR@   .+1   ;
+10              
+11         0CF6 .DUSR WAITGE=JSR@   .+2   ;
+12              
+13         0CF7 .DUSR CTOP  =JSR@   .+3   ;
+14              
+15              
+16              
+17              
+18              
+19         00F8 .DUSR DEVTA=256-8       ; DEVICE TABLE
+20              
+21         0134 .DUSR TOPDE=DEVTA+63-3  ; TOP OF DEVICE TABLE
+22              
+23              
+24              
+25              .END
+
+0000 SOURCE LINES IN ERROR
+
