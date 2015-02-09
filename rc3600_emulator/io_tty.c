@@ -138,9 +138,9 @@ config_tty(char **ap)
 	if (!strcmp(ap[1], "config")) {
 		ttyi_iodev = &iodevs[8];
 		iodevs[8].func = dev_ttyi;
-		iodevs[8].imask = 7;
+		iodevs[8].imask = 14;
 		iodevs[9].func = dev_ttyo;
-		iodevs[9].imask = 6;
+		iodevs[9].imask = 15;
 		return (1);
 	}
 	if (!strcmp(ap[1], "speed")) {
