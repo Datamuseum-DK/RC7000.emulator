@@ -118,7 +118,7 @@ Insn_ALU(void)
 		t = 0;	/* XXX GCC sux */
 	}
 	switch((ci >> 6) & 3) {
-	case 0:				
+	case 0:
 		break;
 	case 1:
 		tt = t;
@@ -133,7 +133,7 @@ Insn_ALU(void)
 		tc = tt & 1;
 		t = tt >> 1;
 		break;
-	case 3: 
+	case 3:
 		t = bswap16(t);
 		break;
 	default:
@@ -141,12 +141,12 @@ Insn_ALU(void)
 	}
 	u = 0;
 	switch(ci & 7) {
-	case 0: break;			 	/* "   " */
-	case 1:	u++; break;		 	/* SKP */
-	case 2: if (!tc) u++; break; 		/* SZC */
-	case 3: if (tc) u++; break; 		/* SNC */
-	case 4: if (t == 0) u++; break; 	/* SZR */
-	case 5: if (t != 0) u++; break; 	/* SNR */
+	case 0: break;				/* "   " */
+	case 1:	u++; break;			/* SKP */
+	case 2: if (!tc) u++; break;		/* SZC */
+	case 3: if (tc) u++; break;		/* SNC */
+	case 4: if (t == 0) u++; break;		/* SZR */
+	case 5: if (t != 0) u++; break;		/* SNR */
 	case 6: if (!tc || t == 0) u++; break;	/* SEZ */
 	case 7: if (tc && t != 0) u++; break;	/* SBN */
 	}

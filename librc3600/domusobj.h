@@ -1,7 +1,7 @@
 #include <sys/queue.h>
 
 typedef uint32_t        W;
- 
+
 #define WVMASK  0x0000ffff
 #define WOFLOW  0x00010000
 #define WRSHIFT 17
@@ -10,7 +10,7 @@ typedef uint32_t        W;
 #define WMSG    0x80000000
 #define WZONE   0x40000000
 #define WDEFCUR (0x20000000 | WVALID)
-        
+
 #define RABS            1
 #define RNORM           2
 #define RBYTE           3
@@ -20,7 +20,7 @@ typedef uint32_t        W;
 #define WRELOC(foo)     (((foo) & WRMASK) >> WRSHIFT)
 #define WADD(foo, bar)  do { (foo) = ((foo) + (bar)) & WVMASK; } while (0)
 #define WVAL(foo)       ((foo) & WVMASK)
- 
+
 #define WISVALID(foo)   (foo & WVALID)
 #define WISABS(foo)     (WRELOC(foo) == RABS)
 #define WISBYTE(foo)    (WRELOC(foo) == RBYTE)

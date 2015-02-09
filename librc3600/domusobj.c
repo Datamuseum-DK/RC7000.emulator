@@ -155,13 +155,13 @@ ReadDomusObj(FILE *f, const char *fn)
 		TAILQ_INSERT_TAIL(&op->recs, rp, list);
 		switch (WVAL(rp->w[0])) {
 		case 2:
-			sprintf(buf, "%05o%05o%05o", 
+			sprintf(buf, "%05o%05o%05o",
 			    WVAL(rp->w[2])/2, WVAL(rp->w[3])/2, WVAL(rp->w[4])/2);
 			for (i = 6; i < rp->nw; i++)
 				rp->w[i] |= (buf[i - 6] - '0') << WRSHIFT;
 			break;
 		case 6:
-			sprintf(buf, "%05o%05o%05o", 
+			sprintf(buf, "%05o%05o%05o",
 			    WVAL(rp->w[2])/2, WVAL(rp->w[3])/2, WVAL(rp->w[4])/2);
 			for (i = 6; i < rp->nw; i++)
 				rp->w[i] |= (buf[i - 6] - '0') << WRSHIFT;
@@ -179,7 +179,7 @@ ReadDomusObj(FILE *f, const char *fn)
 		}
 		if (type == 6) {
 		}
-	} 
+	}
 	fclose (f);
 	return(fp);
 }
