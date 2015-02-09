@@ -243,7 +243,7 @@ irq_lower(struct iodev *io)
 {
 
 	vprint("{Lower %d}", io->unit);
-	ipen &= ~(1 << io->imask);
+	ipen &= ~(0x8000 >> io->imask);
 	io->busy = 0;
 	io->done = 0;
 	io->ipen = 0;
@@ -257,8 +257,9 @@ dev_irq(void *arg1, int arg2 __unused)
 	io = arg1;
 	io->ipen = 1;
 	if (io->busy) {
-		ipen |= (1 << io->imask);
-		vprint("IRQ %d %04x -> %04x", io->unit, (1 << io->imask), ipen);
+		ipen |= (0x8000 >> io->imask);
+		vprint("IRQ %d %04x -> M:%04x", io->unit,
+		    (0x8000 >> io->imask), ipen, mask);
 	}
 	io->busy = 0;
 	io->done = 1;
@@ -395,6 +396,7 @@ dev_cpu(uint16_t ioi, uint16_t *reg, struct iodev *iodev __unused)
 		vprint("READS %o", frontswitch);
 		*reg = frontswitch;
 		break;
+	case DIC:
 	case DICC:
 #if 0
 		/*
@@ -430,7 +432,7 @@ dev_cpu(uint16_t ioi, uint16_t *reg, struct iodev *iodev __unused)
 		for(i = 0; i < 63; i++) {
 			if (!iodevs[i].ipen)
 				continue;
-			if ((1 << iodevs[i].imask) & ipen &&
+			if ((0x8000 >> iodevs[i].imask) & ipen &&
 			    iodevs[i].imask < u) {
 				u = iodevs[i].imask;
 				*reg = i;
