@@ -79,7 +79,7 @@ static u_int h_p;
 
 /************************************************************************/
 
-void
+void __printflike(1,2)
 ioprint(const char *fmt, ...)
 {
 	va_list ap;
@@ -94,7 +94,7 @@ ioprint(const char *fmt, ...)
 	va_end(ap);
 }
 
-static void
+static void __printflike(1,2)
 vprint(const char *fmt, ...)
 {
 	va_list ap;
@@ -258,7 +258,7 @@ dev_irq(void *arg1, int arg2 __unused)
 	io->ipen = 1;
 	if (io->busy) {
 		ipen |= (0x8000 >> io->imask);
-		vprint("IRQ %d %04x -> M:%04x", io->unit,
+		vprint("IRQ %d %04x -> %04x M:%04x", io->unit,
 		    (0x8000 >> io->imask), ipen, mask);
 	}
 	io->busy = 0;
