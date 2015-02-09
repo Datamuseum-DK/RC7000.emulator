@@ -532,7 +532,7 @@ static int
 xmain(void)
 {
 	char dbuf[140];
-	uint16_t u;
+	uint16_t u, opc;
 	int i;
 	u_int *next_event;
 	struct timeval t1, t2;
@@ -580,7 +580,7 @@ xmain(void)
 		
 		/* Handle interrupts */
 		if (intr && (ipen & ~mask)) {
-			ioprint("%10jd IO:IRQ: intr=%d, ipen=%04x, mask=%04x\n",
+			ioprint("%10jd IO:IRQ: intr=%d, ipen=%04x, mask=%04x",
 			     NINS, intr, ipen, mask);
 			intr = 0;
 			cw(0, pc);
@@ -633,6 +633,7 @@ xmain(void)
 		}
 		core_stats[pc]++;
 		instr_stats[ci]++;
+		opc = pc;
 		rc3600_exec();
 		if (ftrace != NULL) {
 			*tracep++ = 0x0106;
@@ -648,7 +649,7 @@ xmain(void)
 
 		if (die || verbose) {
 			LagudDisass(dbuf, ci, NULL, domus);
-			fprintf(vfile, "%10jd %04x:%04x", NINS, pc, ci);
+			fprintf(vfile, "%10jd %04x:%04x", NINS, opc, ci);
 			fprintf(vfile, " %04x %04x %04x %04x %s ",
 			    acc[0], acc[1], acc[2] ,acc[3], carry ? "C" : ".");
 			fprintf(vfile, " |%-16s| ", dbuf);
