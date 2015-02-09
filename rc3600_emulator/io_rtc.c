@@ -69,7 +69,7 @@ config_rtc(char **ap)
 		return (0);
 	if (!strcmp(ap[1], "config")) {
 		iodevs[12].func = dev_rtc;
-		iodevs[12].imask = 3;
+		iodevs[12].imask = 13;
 		timeout(rtc_dly, dev_rtc_tick, &iodevs[12], 0);
 		return (1);
 	}
