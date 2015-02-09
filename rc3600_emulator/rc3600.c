@@ -432,7 +432,7 @@ dev_cpu(uint16_t ioi, uint16_t *reg, struct iodev *iodev __unused)
 		for(i = 0; i < 63; i++) {
 			if (!iodevs[i].ipen)
 				continue;
-			if ((0x8000 >> iodevs[i].imask) & ipen &&
+			if ((0x8000 >> iodevs[i].imask) & ~mask &&
 			    iodevs[i].imask < u) {
 				u = iodevs[i].imask;
 				*reg = i;
