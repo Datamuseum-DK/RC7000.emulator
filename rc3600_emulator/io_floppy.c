@@ -127,17 +127,17 @@ config_floppy(char **ap)
 	if (strcmp(ap[0], "floppy"))
 		return (0);
 	if (!strcmp(ap[1], "config")) {
-                iodevs[49].func = dev_floppy;
-                iodevs[49].imask = 8;
-                iodevs[49].priv = &fd[0];
-                iodevs[52].func = dev_floppy;
-                iodevs[52].imask = 9;
-                iodevs[52].priv = &fd[1];
+		iodevs[49].func = dev_floppy;
+		iodevs[49].imask = 8;
+		iodevs[49].priv = &fd[0];
+		iodevs[52].func = dev_floppy;
+		iodevs[52].imask = 9;
+		iodevs[52].priv = &fd[1];
 		return (1);
 	}
 	if (!strcmp(ap[1], "load")) {
 		FILE *f;
-	
+
 		f = fopen(ap[2], "r");
 		if (f == NULL)
 			err(1, "Cannot open: %s", ap[2]);

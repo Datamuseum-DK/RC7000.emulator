@@ -35,9 +35,9 @@ dev_rtc(uint16_t ioi, uint16_t *reg __unused, struct iodev *iodev)
 	switch (IO_OPER(ioi)) {
 	case DOA:
 		switch ((*reg) & 3) {
-		case 0:	rtc_dly = NSEC / 50;  	break;
-		case 1:	rtc_dly = NSEC / 10;  	break;
-		case 2:	rtc_dly = NSEC / 100;  	break;
+		case 0:	rtc_dly = NSEC / 50;	break;
+		case 1:	rtc_dly = NSEC / 10;	break;
+		case 2:	rtc_dly = NSEC / 100;	break;
 		case 3:	rtc_dly = NSEC / 1000;	break;
 		}
 		ioprint("Rate %g [s]", rtc_dly * 1e-9);

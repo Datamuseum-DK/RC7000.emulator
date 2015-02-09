@@ -97,7 +97,7 @@ domus_trace_sendm(uint16_t adr, int type, u_int *next_event __unused)
 	m3 = cr(m + 3);
 	strcpy(from, Name(cr(32) + 4));
 	strcpy(to, Name(acc[2]));
-	
+
 	fprintf(fmsg, "%04x %04x SendM(%04x,%04x,%04x,%04x) ",
 		pc, m, m0, m1, m2, m3);
 	fprintf(fmsg, "%s -> %s", from, to);
@@ -108,10 +108,10 @@ domus_trace_sendm(uint16_t adr, int type, u_int *next_event __unused)
 	if (!strcmp(to, "DKP0")) {
 		int d, c, h, s, x;
 
-		x = m3;	
-		s = x % 12; 	x /= 12;
-		h = x % 2; 	x /= 2;
-		c = x % 203; 	x /= 203;
+		x = m3;
+		s = x % 12;	x /= 12;
+		h = x % 2;	x /= 2;
+		c = x % 203;	x /= 203;
 		d = x;
 		fprintf(fmsg, "\tdrive: %d  cyl: %d  hd: %d  sc: %d",
 		    d, c, h, s);

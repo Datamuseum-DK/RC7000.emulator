@@ -147,7 +147,7 @@ amx_doa(struct amx *a, uint16_t reg)
 	case 0x04:	/* Select Input Buffer */
 		ioprint("AMX%o: SEL IN BUF[%u] = 0x%04x",
 		    a->dev, ch->cno, ch->ibuf);
-		a->dia = ch->ibuf; 	/* XXX */
+		a->dia = ch->ibuf;	/* XXX */
 		ch->ibuf = 0x0080;
 		return;
 	case 0x05:	/* Select Modem Status */
@@ -178,7 +178,7 @@ amx_dob(struct amx *a, uint16_t reg)
 {
 	struct amxchan *ch = &a->ch[(reg >> 8) & 7];
 	char c;
-		
+
 	c = reg & 0xff;
 	if (ch->fd >= 0) {
 		assert(1 == write(ch->fd, &c, 1));
@@ -231,13 +231,13 @@ NewAmx(int dev)
 	unsigned u;
 	char buf[64];
 	struct termios t;
-	
+
 	a = calloc(sizeof *a, 1);
 	a->dev = dev;
 	for (u = 0; u < 8; u++) {
 		a->ch[u].fd = -1;
 	}
-		
+
 	for (u = 0; u < 1; u++) {
 		sprintf(buf, "/dev/nmdm%uA", u);
 		a->ch[u].fd = open(buf, O_RDWR);

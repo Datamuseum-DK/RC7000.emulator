@@ -26,9 +26,9 @@ static int tty_speed = 9600;
  * from "How to use the Nova Computers", 015-000009-08 p. 2-55.
  */
 uint16_t ttyload[13] = {
-	0126440, /* GET:   SUBO	  1,1	; Clear AC1, Carry	           */
-	0063610, /*	   SKPDN  TTI				           */
-	0000777, /*	   JMP	  .-1	; Wait for Done		           */
+	0126440, /* GET:   SUBO	  1,1	; Clear AC1, Carry		   */
+	0063610, /*	   SKPDN  TTI					   */
+	0000777, /*	   JMP	  .-1	; Wait for Done			   */
 	0060510, /*	   DIAS	  0,TTI	; Read into AC0 and restart reader */
 	0127100, /*	   ADDL   1,1   ; Shift AC1 left 4 places	   */
 	0127100, /*	   ADDL   1,1					   */
@@ -40,7 +40,7 @@ uint16_t ttyload[13] = {
 	0044402, /*	   STA	  1,.+2	; Store it to execute it	   */
 	0004764  /*	   JSR	  GET	; Get another word		   */
 		 /*	   ; This will contain an STA (first STA 1,+1)	   */
-		 /*	   ; This will contain JMP .-4                     */
+		 /*	   ; This will contain JMP .-4			   */
 };
 #endif
 

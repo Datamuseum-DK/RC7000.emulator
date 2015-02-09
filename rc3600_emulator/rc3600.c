@@ -10,7 +10,7 @@
 
 /*
  * 015-000023-01_ProgRef.pdf pdf_pg=19:
- * 	NOTE: When referencing auto-increment and auto-decrement locations,
+ *	NOTE: When referencing auto-increment and auto-decrement locations,
  *	the state of bit 0 before the increment or decrement is the condition
  *	upon which the continuation of the indirection chain is based.  For
  *	example: if an auto-increment location contains 177777o, and the
@@ -18,11 +18,11 @@
  *	will be th enext address of the chain.
  *
  * 015-000023-01_ProgRef.pdf pdf_pg=32:
- *	io-dev = 1 contains 
+ *	io-dev = 1 contains
  *		push/pop/save/mtsp/mtfp/mfsp/mffp
  * 015-000023-01_ProgRef.pdf pdf_pg=34:
- *	TRAP instruction	
- *		
+ *	TRAP instruction
+ *
  */
 
 #include <stdio.h>
@@ -322,7 +322,7 @@ static uint16_t autorom_fd[32] = {
 		     // ;     THE SELECTED DEVICE IS READY FOR COMMANDS.
 		     // .LOC	0
 		     // FLEX=	61		; FLEXIBLE DISC
-/* 00000 */ 0070477, // 	READS	2	; READ SWITCHES(S);
+/* 00000 */ 0070477, //		READS	2	; READ SWITCHES(S);
 /* 00001 */ 0150122, //		COMZL	2,2,SZC	; IF S(0) == 0 THEN
 /* 00002 */ 0000026, //		JMP	FD	;   CARRY:= TRUE AND GOTO FLOP
 /* 00003 */ 0151240, //		MOVOR	2,2	; NOT FLOPPY: DEVICE:= OCT(77);
@@ -331,7 +331,7 @@ static uint16_t autorom_fd[32] = {
 /* 00006 */ 0151404, //		INC	2,2,SZR	;   DEVICE:= DEVICE +1
 /* 00007 */ 0000004, //		JMP	LOOP	; FOR FURTHER COMMENTS SEE OP1
 /* 00010 */ 0071077, // OP1:	071077		; DOAS 2 <DEV> -1 :INCREMENTS:
-/* 00011 */ 0024015, // 	LDA	1,.377	; LOAD "JMP .+0" INTO LAST WORD
+/* 00011 */ 0024015, //		LDA	1,.377	; LOAD "JMP .+0" INTO LAST WORD
 /* 00012 */ 0044377, //		STA	1,377	;   OF PAGE ZERO
 /* 00013 */ 0063377, // OP2:	0633377		; SKPBN <DEV> -1 :INCREMENTS:
 /* 00014 */ 0000010, //		JMP	OP1	; READ FIRST BLOCK, WAIT UNTIL
@@ -569,7 +569,7 @@ xmain(void)
 			if (dur == 0)
 				break;
 			ep = LIST_FIRST(&eventhead);
-			if (ep == NULL) 
+			if (ep == NULL)
 				break;
 			if (ep->count <= dur) {
 				dur -= ep->count;
@@ -594,7 +594,7 @@ xmain(void)
 			usleep(10000);
 			continue;
 		}
-		
+
 		/* Handle interrupts */
 		if (intr && (ipen & ~mask)) {
 			ioprint("%10jd IO:IRQ: intr=%d, ipen=%04x, mask=%04x",
@@ -857,7 +857,7 @@ CLI_input(int chr)
 		}
 		if (!ttyi_istty && chr == '\n')
 			chr = '\r';
-			
+
 		ta[nta++] = chr;
 		if (chr == '\001') {
 			has_cmd = 1;
@@ -943,7 +943,7 @@ main(int argc, char **argv)
 	AddDev(config_amx);
 	AddDev(config_floppy);
 	AddDev(config_stat);
-	
+
 	Cmd("cpu config");
 	Cmd("tty config");
 	Cmd("rtc config");

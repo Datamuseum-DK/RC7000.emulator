@@ -115,7 +115,7 @@ dev_dkp_read(void *arg1, int arg2 __unused)
 	if (dkp->rc & 0xf) {
 		timeout(10000, dev_dkp_read, arg1, 0);
 		return;
-	} 
+	}
 	if (!(dkp->rc & 0xf))
 		dkp->rc -= 0x10; /* correct for overflow from bottom 4 bits */
 	dkp->stat |= 0x8000;
