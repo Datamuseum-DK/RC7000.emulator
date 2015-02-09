@@ -170,7 +170,7 @@ main(int argc __unused, char **argv __unused)
 		else
 			ascii[1] = ' ';
 		u = be16dec(&v);
-		LagudDisass(buf, u, &d, NULL);
+		LagudDisass(buf, u, &d, 0);
 		printf("%05d %04x %c%c %04x  %s  ", a, a, ascii[1], ascii[0], u, buf);
 		if (d != 0)
 			printf("->%04x", a + d);

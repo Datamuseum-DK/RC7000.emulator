@@ -1,5 +1,5 @@
 PROG=	lagud
-NOMAN=	yes
+NO_MAN=	yes
 
 CFLAGS+=	-DLAGUD_MAIN -I../include
 
