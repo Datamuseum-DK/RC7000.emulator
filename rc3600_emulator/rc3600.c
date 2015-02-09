@@ -53,7 +53,7 @@ FILE *vfile;
 
 int x11 = 0;
 
-static u_int die, step = 0;
+static u_int die, stop, step = 0;
 static char vbuf[200], *vbufp, *vbufe;
 static uint16_t frontswitch;
 
@@ -446,11 +446,14 @@ dev_cpu(uint16_t ioi, uint16_t *reg, struct iodev *iodev __unused)
 		}
 		break;
 	case DOC:
-		fprintf(stderr, "HALT\n");
-		die = 1;
+		fprintf(stderr, "\r\nHALT at 0x%04x 0%06o\n\r", npc, npc);
+		stop = 1;
 		vprint("HALT");
-		return;
+		break;
 	default:
+		fprintf(stderr,
+		    "\r\nUNKNOWN CPU IO 0x%04x at 0x%04x 0%06o\n\r",
+		    ioi, npc, npc);
 		break;
 	}
 }
@@ -481,6 +484,12 @@ config_cpu(char **ap)
 		for (i = 0; i < 32; i++)
 			cw(i, autorom[i * 2 + 1]);
 		npc = 0;
+		return (1);
+	}
+	if (!strcmp(ap[1], "start")) {
+		if (ap[2] != NULL)
+			pc = strtoul(ap[2], NULL, 0);
+		stop = 0;
 		return (1);
 	}
 	return (1);
@@ -579,6 +588,12 @@ xmain(void)
 			break;
 		}
 		*vbuf = '\0';
+
+		if (stop) {
+			dur += 10000 * 1000;
+			usleep(10000);
+			continue;
+		}
 		
 		/* Handle interrupts */
 		if (intr && (ipen & ~mask)) {
@@ -663,6 +678,8 @@ xmain(void)
 				fflush(vfile);
 		}
 		pc = npc & 0x7fff;
+		if (stop)
+			printf("Stopped, next PC: 0x%04x\r\n", pc);
 		if (die)
 			break;
 	}
