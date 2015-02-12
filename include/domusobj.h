@@ -5,9 +5,6 @@
 #define WRSHIFT 17
 #define WRMASK  (7 << WRSHIFT)
 #define WVALID  0x00100000
-#define WMSG    0x80000000
-#define WZONE   0x40000000
-#define WDEFCUR (0x20000000 | WVALID)
         
 #define RABS            1
 #define RNORM           2
@@ -57,6 +54,7 @@ struct domus_obj_file {
 };
 
 
+extern const char fmtreloc[];
 struct domus_obj_file *
 ReadDomusObj(getc_f *f, void *priv, const char *fn, int verbose);
 

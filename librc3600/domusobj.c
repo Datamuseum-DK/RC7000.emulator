@@ -9,8 +9,6 @@
 #include <rc3600.h>
 #include <domusobj.h>
 
-uint32_t CUR = WDEFCUR;
-
 const char fmtreloc[8] = "0 \'\"456*";
 
 uint32_t
@@ -48,14 +46,10 @@ Wfmt(uint32_t w, char *buf)
 	if (buf == NULL)
 		buf = mybuf;
 
-	if (w == CUR)
-		return ("CUR  ");
 	if (WISVALID(w)) {
 		sprintf(buf, "%04x%c", WVAL(w), fmtreloc[WRELOC(w)]);
 		return (buf);
 	}
-	if (w & WMSG)
-		return ("mess ");
 	return ("-----");
 }
 
