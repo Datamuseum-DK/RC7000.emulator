@@ -94,7 +94,7 @@ GetWord(struct domus_obj_file *fp, uint16_t *w)
  */
 
 struct domus_obj_file *
-ReadDomusObj(getc_f *func, void *priv, const char *fn)
+ReadDomusObj(getc_f *func, void *priv, const char *fn, int verbose)
 {
 	uint16_t type, len, sum, tmp;
 	struct domus_obj_obj *op;
@@ -116,7 +116,9 @@ ReadDomusObj(getc_f *func, void *priv, const char *fn)
 	fp->in_leader = 1;
 
 	op = NULL;
-	printf(" type len_ rel1|reloc rel2|reloc rel3|reloc sum_ addr\n");
+	if (verbose)
+		printf(
+		    " type len_ rel1|reloc rel2|reloc rel3|reloc sum_ addr\n");
 	for (;;) {
 		if (GetWord(fp, &type))
 			break;
@@ -146,14 +148,16 @@ ReadDomusObj(getc_f *func, void *priv, const char *fn)
 		rp->nw = i;
 		sum = 0;
 		for (i = 0; i < rp->nw; i++) {
-			printf(" %04x", WVAL(rp->w[i]));
-			if (i >= 2 && i <= 4)
+			if (verbose)
+				printf(" %04x", WVAL(rp->w[i]));
+			if (i >= 2 && i <= 4 && verbose)
 				printf("|%05o", WVAL(rp->w[i]) >> 1);
 			sum += WVAL(rp->w[i]);
 		}
 		if (sum != 0)
 			errx(1, " Checksum error: %04x", sum);
-		printf("\n");
+		if (verbose)
+			printf("\n");
 		TAILQ_INSERT_TAIL(&op->recs, rp, list);
 		switch (WVAL(rp->w[0])) {
 		case 2:
@@ -172,8 +176,9 @@ ReadDomusObj(getc_f *func, void *priv, const char *fn)
 			for (i = 6; i < rp->nw; i++)
 				rp->w[i] |= (buf[i - 6] - '0') << WRSHIFT;
 			op->start = rp->w[6];
-			printf("END of OBJECT title %s start %s\n",
-			    op->title, Wfmt(op->start, buf));
+			if (verbose)
+				printf("END of OBJECT title %s start %s\n",
+				    op->title, Wfmt(op->start, buf));
 			op = NULL;
 			fp->in_leader = 1;
 			break;

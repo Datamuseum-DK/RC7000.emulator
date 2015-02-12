@@ -58,7 +58,7 @@ struct domus_obj_file {
 
 
 struct domus_obj_file *
-ReadDomusObj(getc_f *f, void *priv, const char *fn);
+ReadDomusObj(getc_f *f, void *priv, const char *fn, int verbose);
 
 /* radix40.c */
 char *Radix40(uint16_t u, uint16_t v, char *p);
