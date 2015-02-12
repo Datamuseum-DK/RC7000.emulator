@@ -56,7 +56,7 @@ struct iodev {
 	uint8_t		ipen;		/* Interrupt Pending */
 };
 
-struct iodev iodevs[64];
+extern struct iodev iodevs[64];
 
 #define	NIO		0x6000
 #define	NIOS		0x6040

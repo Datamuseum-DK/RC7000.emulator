@@ -23,6 +23,7 @@ uint16_t	ci;			/* Current instruction */
 unsigned	*timing;		/* Timing spec, if any. */
 unsigned	dur;			/* Duration of current instruction */
 
+struct iodev iodevs[64];
 
 static unsigned notiming[TIME_LASTONE];
 
