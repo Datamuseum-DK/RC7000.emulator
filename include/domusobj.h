@@ -1,7 +1,5 @@
 #include <sys/queue.h>
 
-typedef uint32_t        W;
- 
 #define WVMASK  0x0000ffff
 #define WOFLOW  0x00010000
 #define WRSHIFT 17
@@ -25,36 +23,42 @@ typedef uint32_t        W;
 #define WISABS(foo)     (WRELOC(foo) == RABS)
 #define WISBYTE(foo)    (WRELOC(foo) == RBYTE)
 
-W Wtonorm(W a);
-W Woffset(W a, int i);
-const char *Wfmt(W w, char *buf);
-void Wsetabs(W *w, u_int val);
+uint32_t Wtonorm(uint32_t a);
+uint32_t Woffset(uint32_t a, int i);
+const char *Wfmt(uint32_t w, char *buf);
+void Wsetabs(uint32_t *w, unsigned val);
 
-extern W CUR;
+extern uint32_t CUR;
+
+typedef int getc_f(void *priv);
 
 #define	OBJNHDR		6			/* Constant constant */
 #define	OBJNWORD	(OBJNHDR + 15 * 3)	/* Tunable constant */
 
 struct domus_obj_rec {
-	u_int				nw;
-	W				w[OBJNWORD];
+	unsigned			nw;
+	uint32_t			w[OBJNWORD];
 	TAILQ_ENTRY(domus_obj_rec)	list;
 };
 
 struct domus_obj_obj {
 	char				title[6];
-	W				start;
+	uint32_t			start;
 	TAILQ_HEAD(,domus_obj_rec)	recs;
 	TAILQ_ENTRY(domus_obj_obj)	list;
 };
 
 struct domus_obj_file {
 	const char			*fn;
+	int				in_leader;
+	getc_f				*func;
+	void				*priv;
 	TAILQ_HEAD(,domus_obj_obj)	objs;
 };
 
+
 struct domus_obj_file *
-ReadDomusObj(FILE *f, const char *fn);
+ReadDomusObj(getc_f *f, void *priv, const char *fn);
 
 /* radix40.c */
 char *Radix40(uint16_t u, uint16_t v, char *p);
