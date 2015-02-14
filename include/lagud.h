@@ -1,1 +1,1 @@
-void LagudDisass(char *buf, u_int u, int *d, int domus);
+void LagudDisass(char *buf, unsigned u, int *d, int domus);
