@@ -83,7 +83,7 @@ main(int argc, char **argv)
 	(void)argv;
 	setbuf(stderr, NULL);
 	setbuf(stdout, NULL);
-	fi = fopen("../domus/__.BB", "r");
+	fi = fopen("../domus/__.SLAVE", "r");
 
 	//fo = open("/dev/cuaU0", O_RDWR);
 	fo = open("/dev/nmdm1B", O_RDWR);

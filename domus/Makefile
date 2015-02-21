@@ -16,3 +16,8 @@ test:	${PROG}
 	sed 's/$$//' ../sources/RCSL_52AA_894_appendix_d.src > __.SRC
 	./${PROG} DOMAC BIN.BB LIST.LL SRC
 	tail -3 __.LL
+
+slave:	${PROG}
+	sed 's/$$//' ../slavectl/slave.src > __.SRC
+	./${PROG} DOMAC BIN.SLAVE LIST.LL SRC
+	tail -3 __.LL
