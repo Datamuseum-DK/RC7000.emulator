@@ -93,4 +93,5 @@ t2:	${PROG}
 	./${PROG} -d \
 		-c "tty2 1 config" \
 		-c "cpu switch 050" \
+		-c "cpu rc3803" \
 		-c "cpu autoload"

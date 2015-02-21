@@ -358,6 +358,27 @@ static uint16_t autorom_fd[32] = {
 /* 00037 */ 0101000, // COMM:	1B0+1B6		; COMMAND BITS
 };
 
+/* RC3803 =========================================================== */
+
+static void
+dev_rc3803(uint16_t ioi, uint16_t *reg __unused, struct iodev *iodev __unused)
+{
+	uint16_t w;
+
+	switch(ioi) {
+	case 062600:	// LDB
+		w = cr(acc[1] >> 1);
+		if (acc[1] & 1)
+			acc[0] = w & 0xff;
+		else
+			acc[0] = w >> 8;
+		return;
+	default:
+		printf("\r\n\nUnhandled RC3803 instruction: %06o\r\n", ioi);
+		exit(0);
+	}
+}
+
 /* CPU ============================================================== */
 
 static void
@@ -465,6 +486,10 @@ config_cpu(char **ap)
 
 	if (strcmp(ap[0], "cpu"))
 		return (0);
+	if (!strcmp(ap[1], "rc3803")) {
+		iodevs[1].func = &dev_rc3803;
+		return (1);
+	}
 	if (!strcmp(ap[1], "config")) {
 		iodevs[63].func = &dev_cpu;
 		return (1);
