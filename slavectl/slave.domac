@@ -1,0 +1,377 @@
+; The Program Load Program in RC3803 autoboot ROM
+
+	.TXTM	1
+	.TXTN	0
+	.RDXO	16
+
+	.RDX	8
+	.DUSR	LDB =	62601
+	.DUSR	STB =	63201
+	.RDX	10
+
+?CTR	=  8.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Things in AUTOLOAD we reuse:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ALPTR	= 23.			; Destination pointer
+GETW	= 24.			; AC1 = GetWord() function
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; AUTOLOAD can only load into page zero.  We let it
+;; pull in this tiny little "Extra Loader" which just
+;; continues where AUTOLOAD stopped.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.LOC	64.			; Where AUTOLOAD puts us
+	.-ELDR4-1 		; Word Count for AUTOLOAD
+ELDR0:
+	LDA	2,ALPTR
+	INC	2,2
+ELDR1:
+	JSR	GETW
+	STA	1,+0,2
+	INC	2,2
+	LDA	1,ELDR2
+	SUB#	1,2,SZR
+	JMP	ELDR1
+	JMP	@ELDR3
+ELDR2:	END
+ELDR3:	BIRTH
+ELDR4:	JMP	ELDR0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Stuff we want in page zero can go here...
+;; XXX: reuse MUS's numeric constants ?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+CMD0:	0
+ARG1:	0
+ARG2:	0
+ARG3:	0
+ARG4:	0
+CSUM:	0
+
+HW:	.TXT "<13><10><10>TTY2 SLAVE PROGRAM<13><10>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; TTY In/Out
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+TTYSP:	LDA	0,.+2
+	JMP	TTY
+	32.
+
+TTYNL:	LDA	0,.+7
+	DOAS	0,9.
+	SKPDN	9.
+	JMP	.-1
+	LDA	0,.+2
+	JMP	TTY
+	13.
+	10.
+
+TTYC:
+	LDA	0,+0,3
+	MOVS	0,0
+	DOAS	0,9.
+	SKPDN	9.
+	JMP	.-1
+	JMP	+1,3
+
+TTYC2:
+	LDA	0,+0,3
+	MOVS	0,0
+	DOAS	0,9.
+	SKPDN	9.
+	JMP	.-1
+	MOVS	0,0
+	DOAS	0,9.
+	SKPDN	9.
+	JMP	.-1
+	JMP	+1,3
+
+TTYS:
+	LDA	1,+0,3
+	INC	3,3
+TTYS1:
+	LDB
+	MOV	0,0,SNR
+	JMP	+0,3
+	INC	1,1
+	DOAS	0,9.
+	SKPDN	9.
+	JMP	.-1
+	JMP	TTYS1
+
+?TTW0:	0
+?TTW1:	0
+TTYW:
+	STA	3,?TTW1
+	MOVS	0,0
+	JSR	TTYB
+	MOVS	0,0
+	JSR	TTYB
+	JMP @	?TTW1
+
+?TTB0:	0
+?TTB1:	0
+TTYB:
+	STA	3,?TTB1
+	STA	0,?TTB0
+	MOVZR	0,0
+	MOVZR	0,0
+	MOVZR	0,0
+	MOVZR	0,0
+	JSR	TTYX
+	LDA	0,?TTB0
+	JSR	TTYX
+	LDA	0,?TTB0
+	JSR @	?TTB1
+
+TTYX:
+	LDA	1,C15
+	AND	1,0
+	LDA	1,HEX2
+	ADDZ	0,1
+	LDB
+
+TTY:
+	DOAS	0,9.
+	SKPDN	9.
+	JMP	.-1
+	JMP	+0,3
+
+C15:	15
+HEX:	.TXT "0123456789abcdef"
+HEX2:	HEX*2
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+BIRTH:
+	JSR	TTYS
+	HW*2
+MAIN:
+	JSR	TTYNL
+	SUBO	2,2
+	JSR	GETW
+	STA	1,CMD0
+	ADDZ	1,2
+	JSR	GETW
+	STA	1,ARG1
+	ADDZ	1,2
+	JSR	GETW
+	STA	1,ARG2
+	ADDZ	1,2
+	JSR	GETW
+	STA	1,ARG3
+	ADDZ	1,2
+	JSR	GETW
+	STA	1,ARG4
+	ADDZ	1,2
+	JSR	GETW
+	STA	1,CSUM
+	ADDZ	1,2,SZR
+	JMP	ESUM
+	JSR	TTYCM
+	LDA	2,?CTB
+	LDA	3,?CTE
+	LDA	0,CMD0
+LOOP:
+	LDA	1,+0,2
+	SUB #	1,0,SNR
+	JMP	FOUND
+	INC	2,2
+	INC	2,2
+	SUB #	2,3,SZR
+	JMP	LOOP
+	JSR 	TTYS
+	?NOTF*2
+	JMP	MAIN
+
+FOUND:
+	LDA	3,+1,2
+	MOV	3,1
+	INCZL	1,1
+	JSR 	TTYS1
+	JSR	TTYSP
+	JMP @	+1,2
+
+?CTB:	CTBL
+?CTE:	CTBLE
+
+?NOTF:	.TXT	" CMD NOT FOUND"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+?ESUM:	.TXT	" CMD SUM ERROR "
+?ESUA:	0
+ESUM:
+	STA	2,?ESUA
+	JSR	TTYCM
+	JSR 	TTYS
+	?ESUM*2
+	LDA	0,?ESUA
+	JSR	TTYW
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Dump Command buffer to TTY
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+?TTYC:	0	
+TTYCM:
+	STA	3,?TTYC
+	JSR	TTYC
+	'['
+	LDA	0,CMD0
+	JSR	TTYW
+	JSR	TTYSP
+	LDA	0,ARG1
+	JSR	TTYW
+	JSR	TTYSP
+	LDA	0,ARG2
+	JSR	TTYW
+	JSR	TTYSP
+	LDA	0,ARG3
+	JSR	TTYW
+	JSR	TTYSP
+	LDA	0,ARG4
+	JSR	TTYW
+	JSR	TTYSP
+	LDA	0,CSUM
+	JSR	TTYW
+	JSR	TTYC2
+	'] '
+	JMP	@?TTYC
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Put Word pendant to AUTOLOAD's GETW
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+PUTW:
+	MOVS	0,0
+	DOAS	0,41.
+	SKPDN	41.
+	JMP	.-1
+	MOVS	0,0
+	DOAS	0,41.
+	SKPDN	41.
+	JMP	.-1
+	JMP	+0,3
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Command lookup table
+
+CTBL:
+	0.
+	C00
+	1.
+	C01
+	2.
+	C02
+	3.
+	C03
+	4.
+	C04
+CTBLE:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Just returns status zero
+
+C00:	
+	JMP	?C00
+	.TXT	"PING"
+?C00:
+	SUBO	0,0
+	JSR	PUTW
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Returns SUM(ARG1::ARG2)
+
+C01:	
+	JMP	?C01
+	.TXT	"SUM"
+?C01:
+	SUBO	0,0
+	LDA	2,ARG1
+	LDA	3,ARG2
+?C01A:
+	LDA	1,+0,2
+	ADDZ	1,0
+	INC	2,2
+	SUB #	2,3,SZR
+	JMP	?C01A
+	JSR	PUTW
+	JSR	TTYW
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Uploads (ARG1:ARG2) returns sum
+
+C02:	
+	JMP	?C02
+	.TXT	"UPLOAD"
+?C02:
+	LDA	0,ARG1
+	STA	0,ARG3
+?C02A:
+	JSR	GETW
+	STA @	1,ARG3
+	ISZ	ARG3
+	LDA	2,ARG3
+	LDA	3,ARG2
+	SUB #	2,3,SZR
+	JMP	?C02A
+	JMP	C01
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Downloads (ARG1:ARG2) returns sum
+
+C03:	
+	JMP	?C03
+	.TXT	"DOWNLOAD"
+?C03:
+	SUBO	1,1
+?C03A:
+	LDA @	0,ARG1
+	ADDZ	0,1
+	JSR	PUTW
+	ISZ	ARG1
+	LDA	2,ARG1
+	LDA	3,ARG2
+	SUB #	2,3,SZR
+	JMP	?C03A
+	MOV	1,0
+	JSR	TTYW
+	JSR	PUTW
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Fills (ARG1:ARG2) with ARG3, returns sum
+
+C04:	
+	JMP	?C04
+	.TXT	"FILL"
+?C04:
+	SUBO	0,0
+?C04A:
+	LDA 	1,ARG3
+	ADDZ	1,0
+	STA @	1,ARG1
+	ISZ	ARG1
+	LDA	2,ARG1
+	LDA	3,ARG2
+	SUB #	2,3,SZR
+	JMP	?C04
+	JSR	TTYW
+	JSR	PUTW
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+END:
+
+.END
