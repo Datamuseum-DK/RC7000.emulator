@@ -31,6 +31,8 @@
 
 #define ADR0	0x1ddd
 
+static FILE *tf;
+
 /**********************************************************************/
 
 static uint16_t	core[32768];
@@ -72,6 +74,35 @@ getstr(uint16_t a, uint16_t len)
 	}
 	s[i] = '\0';
 	return (strdup(s));
+}
+
+static int
+ascii(int x)
+{
+	if (x >= ' ' && x <= '~')
+		return (x);
+	else
+		return ('.');
+}
+
+static void
+dump_core(void)
+{
+	int i, j;
+
+	fprintf(tf, "\n");
+	for (i = 0; i < 32768;) {
+		fprintf(tf, "%04x: ", i);
+		for (j = 0; j < 16; j++)
+			fprintf(tf, " %04x", core[i + j]);
+		fprintf(tf, "\t");
+		for (j = 0; j < 16; j++)
+			fprintf(tf, "%c%c",
+			    ascii(core[i+j] >> 8),
+			    ascii(core[i+j] & 0xff));
+		fprintf(tf, "\n");
+		i += j;
+	}
 }
 
 /**********************************************************************/
@@ -124,7 +155,7 @@ load_file(const char *fn, uint16_t adr)
 		//printf("\n");
 	}
 
-	printf("Highest Load %04x\n", h);
+	fprintf(tf, "Highest Load %04x\n", h);
 	return (doo->start + adr);
 }
 
@@ -154,17 +185,26 @@ new_proc(const char *name, sendmsg_f *sendm)
 static void
 proc_TTY_sendm(struct process *cur, uint16_t msg)
 {
-	char *txt, *p;
+	char *txt;
+	int i;
 	(void)cur;
 
+	printf("TTY:\n\t");
 	assert(core[msg + 0] == 3);
 	txt = getstr(core[msg + 2], core[msg + 1]);
-	for (p = txt; *p != '\0'; p++) {
-		if (*p >= ' ' && *p <= '~')
-			putchar(*p);
+	for (i = 0; i < core[msg + 1]; i++) {
+		if (txt[i] == 0)
+			break;
+		if (txt[i] >= ' ' && txt[i] <= '~')
+			putchar(txt[i]);
+		else if (txt[i] == '\n')
+			printf("\\n");
+		else if (txt[i] == '\r')
+			printf("\\r");
 		else
-			printf("\\x%02x", *p);
+			printf("\\x%02x", txt[i] & 0xff);
 	}
+	printf("\n");
 	core[msg + 0] = 0;
 }
 
@@ -176,9 +216,10 @@ proc_S_sendm(struct process *cur, uint16_t msg)
 	char *cmd;
 
 	(void)cur;
-	if (core[msg] == 3) {
+	switch(core[msg]) {
+	case 0x0003:
 		cmd = getstr(core[msg + 2], core[msg + 1]);
-		printf(" <%s>\n", cmd);
+		fprintf(tf, " S CMD <%s>\n", cmd);
 		assert(!strcmp(cmd, "GET DOMWK"));
 
 		core[0xf1] = 0x18c9;
@@ -212,11 +253,20 @@ proc_S_sendm(struct process *cur, uint16_t msg)
 		core[msg + 0] = 0;
 		core[msg + 2] = load_addr + 7;
 		return;
-	}
-	if (core[msg] == C1B8) {
+	case 0x0005:
+		fprintf(tf, " S GET ERROR %d\n", core[msg + 3]);
+		printf("S GET ERROR %d\n", core[msg + 3]);
+		dump_core();
+		exit(0);
+	case C1B8:
 		cmd = getstr(core[msg + 2], core[msg + 1]);
-		printf(" <%s>\n", cmd);
-		assert(0);
+		printf("Unhandled S CMD <%s>\n", cmd);
+		dump_core();
+		exit(0);
+	default:
+		printf("Unhandled S CMD %04x\n", core[msg]);
+		dump_core();
+		exit(0);
 	}
 }
 
@@ -238,7 +288,7 @@ proc_area_sendm(struct process *cur, uint16_t msg)
 	switch(core[msg + 0] & 0x3) {
 	case 0x0:
 	case 0x2:
-		printf(" Control");
+		fprintf(tf, " Control");
 		/* Control */
 		core[msg + 0] = 0;
 		core[msg + 1] = 0;
@@ -246,27 +296,30 @@ proc_area_sendm(struct process *cur, uint16_t msg)
 		core[msg + 3] = 0;
 		break;
 	case 0x1:
-		printf(" Input");
+		fprintf(tf, " Input");
 		assert(core[msg + 3] < 0x200);
 		assert((core[msg + 0] & C1B8) == 0);
 		assert(core[msg + 1] == 512);
 		assert((core[msg + 2] & 1) == 0);
 		i = pread(a->fd, buf, 512, core[msg + 3] * 512);
-		if (i == 0) {
+		if (i != 512) {
+			fprintf(tf, " EOF (%d)", i);
 			memset(buf, 0, sizeof buf);
-			i = 512;
+			core[msg] = 0x0810;
+			core[msg + 1] = 0x0810;
+		} else {
+			assert(i == 512);
+			j = core[msg + 2] >> 1;
+			for (i = 0; i < 256; i++, j++) {
+				core[j] = 0;
+				core[j] |= buf[i + i + 0] << 8;
+				core[j] |= buf[i + i + 1];
+			}
+			core[msg + 0] = 0;
 		}
-		assert(i == 512);
-		j = core[msg + 2] >> 1;
-		for (i = 0; i < 256; i++, j++) {
-			core[j] = 0;
-			core[j] |= buf[i + i + 0] << 8;
-			core[j] |= buf[i + i + 1];
-		}
-		core[msg + 0] = 0;
 		break;
 	case 0x3:
-		printf(" Output");
+		fprintf(tf, " Output");
 		assert(core[msg + 3] < 0x200);
 		assert((core[msg + 0] & C1B8) == 0);
 		assert(core[msg + 1] == 512);
@@ -301,7 +354,7 @@ proc_CAT_sendm(struct process *cur, uint16_t msg)
 
 	switch(core[msg]) {
 	case C1B1:
-		printf(" CREATE <%s>\n", fname);
+		fprintf(tf, " CREATE <%s>\n", fname);
 		fd = open(fn, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 		assert(fd >= 0);
 		assert(ftruncate(fd, core[msg + 2] * 512) == 0);
@@ -309,7 +362,7 @@ proc_CAT_sendm(struct process *cur, uint16_t msg)
 		core[msg + 0] = 0;
 		break;
 	case C1B2:
-		printf(" LOOKUP <%s>\n", fname);
+		fprintf(tf, " LOOKUP <%s>\n", fname);
 
 		j = stat(fn, &st);
 		if (j < 0) {
@@ -352,12 +405,12 @@ proc_CAT_sendm(struct process *cur, uint16_t msg)
 		core[msg + 0] = 0;
 		break;
 	case C1B4:
-		printf(" DELETE <%s>\n", fname);
+		fprintf(tf, " DELETE <%s>\n", fname);
 		unlink(fn);
 		core[msg + 0] = 0;
 		break;
 	case C1B5:
-		printf(" CREATE AREA <%s>\n", fname);
+		fprintf(tf, " CREATE AREA <%s>\n", fname);
 		TAILQ_FOREACH(p, &process_list, list) {
 			if (!strcmp(p->name, fname)) {
 				core[msg + 0] = 0;
@@ -373,7 +426,7 @@ proc_CAT_sendm(struct process *cur, uint16_t msg)
 		core[msg + 0] = 0;
 		break;
 	case C1B6:
-		printf(" REMOVE AREA <%s>\n", fname);
+		fprintf(tf, " REMOVE AREA <%s>\n", fname);
 		core[msg + 0] = 0;
 		break;
 	default:
@@ -391,12 +444,11 @@ domus_sendm(void)
 	int i;
 
 	name = getstr(acc[2] << 1, 5);
-	printf("\tTo: '%s'", name);
-	printf(" [%04x", core[acc[1] + 0]);
-	printf(" %04x", core[acc[1] + 1]);
-	printf(" %04x", core[acc[1] + 2]);
-	printf(" %04x]", core[acc[1] + 3]);
-
+	fprintf(tf, "\tTo: '%s'", name);
+	fprintf(tf, " [%04x", core[acc[1] + 0]);
+	fprintf(tf, " %04x", core[acc[1] + 1]);
+	fprintf(tf, " %04x", core[acc[1] + 2]);
+	fprintf(tf, " %04x]", core[acc[1] + 3]);
 	acc[2] = 0x500;
 	for (i = 0; i < 4; i++)
 		core[0x500 + 6 + i] = core[acc[1] + i];
@@ -420,10 +472,12 @@ static void
 domus_waita(void)
 {
 
-	printf("\t[%04x", core[0x500 + 6]);
-	printf(" %04x", core[0x500 + 7]);
-	printf(" %04x", core[0x500 + 8]);
-	printf(" %04x]\n", core[0x500 + 9]);
+	if (0) {
+		printf("\t[%04x", core[0x500 + 6]);
+		printf(" %04x", core[0x500 + 7]);
+		printf(" %04x", core[0x500 + 8]);
+		printf(" %04x]\n", core[0x500 + 9]);
+	}
 	acc[0] = core[0x500 + 6];
 	acc[1] = core[0x500 + 7];
 	pc++;
@@ -438,7 +492,7 @@ domus_open(void)
 
 	sprintf(fn, "__.%s", z);
 
-	printf("fn = %s", fn);
+	fprintf(tf, "fn = %s", fn);
 
 	if (acc[0] == 3)
 		fd = open(fn, O_WRONLY|O_CREAT|O_TRUNC, 0664);
@@ -450,7 +504,7 @@ domus_open(void)
 	}
 	assert(fd > 0);
 	core[acc[2] + 21] = fd;
-	printf("Open %s -> %d\n", fn, fd);
+	fprintf(tf, "Open %s -> %d\n", fn, fd);
 	pc++;
 }
 
@@ -462,7 +516,7 @@ domus_close(void)
 
 	fd = core[acc[2] + 21];
 	core[acc[2] + 21] = 0;
-	printf(" %s -> %d\n", z, fd);
+	fprintf(tf, " %s -> %d\n", z, fd);
 	assert(close(fd) == 0);
 	pc++;
 }
@@ -488,16 +542,19 @@ domus_inchar(void)
 	char c;
 
 	fd = core[acc[2] + 21];
-	printf(" z=%s fd=%d", z, fd);
+	if (0)
+		printf(" z=%s fd=%d", z, fd);
 	assert(fd > 0);
 	i = read(fd, &c, 1);
 	if (i != 1)
 		c = 0x19;
 	acc[1] = c;
-	if (c >= ' ' && c <= '~')
-		printf(" '%c'\n", c);
-	else
-		printf(" 0x%02x\n", c);
+	if (0) {
+		if (c >= ' ' && c <= '~')
+			printf(" '%c'\n", c);
+		else
+			printf(" 0x%02x\n", c);
+	}
 	pc++;
 }
 
@@ -567,7 +624,7 @@ proc_S_build_arg(int adr, int argc, const char * const *argv)
 		do {
 			i = strcspn(p, ",./:=");
 			assert(i > 0);
-			printf("%d <%.*s> %02x %d\n", argc, i, p, p[i], i);
+			fprintf(tf, "%d <%.*s> %02x %d\n", argc, i, p, p[i], i);
 			core[adr++] = 0x000a;
 			core[adr++] = sep << 8;
 			core[adr + 0] = 0x0000;
@@ -594,8 +651,19 @@ zone(void)
 {
 	char *z = getstr(acc[2] << 1, 5);
 
-	printf(" ZONE=0x%04x '%s'", acc[2], z);
+	fprintf(tf, " ZONE=0x%04x '%s'", acc[2], z);
 	free(z);
+}
+
+static void
+trc(intmax_t i)
+{
+	char *p;
+	(void)i;
+	p = Domus3Disass(core[pc], NULL, NULL);
+	// fprintf(tf, "%10jd ", i);
+	fprintf(tf, "%04x %04x [%04x %04x %04x %04x] %s",
+	    pc, core[pc], acc[0], acc[1], acc[2], acc[3], p);
 }
 
 int
@@ -604,10 +672,14 @@ main(int argc, const char * const *argv)
 	intmax_t i, j;
 	uint16_t cur;
 	char *p;
+	int trace = 0;
 
 	assert(argc > 1);
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
+
+	tf = fopen("/tmp/_domus", "w");
+	assert(tf != NULL);
 
 	(void)new_proc("TTY", proc_TTY_sendm);
 	(void)new_proc("S", proc_S_sendm);
@@ -617,7 +689,7 @@ main(int argc, const char * const *argv)
 
 	cur = load_file(argv[1], ADR0);
 
-	printf("CUR = %04x\n", cur);
+	fprintf(tf, "CUR = %04x\n", cur);
 
 	pc = core[cur + 19] >> 1;
 
@@ -638,25 +710,22 @@ main(int argc, const char * const *argv)
 	}
 
 	for (i = 0; i < 100000000LL; i++) {
-		if (0) {
-			p = Domus3Disass(core[pc], NULL, NULL);
-			printf("%10jd %04x %04x [%04x %04x %04x %04x] %s", i,
-			    pc, core[pc], acc[0], acc[1], acc[2], acc[3], p);
-		}
+		if (trace) 
+			trc(i);
 		switch(core[pc]) {
 		case 0x0c04:	// SENDMESSAGE
 			p = Domus3Disass(core[pc], NULL, NULL);
-			printf("%10jd %04x %04x [%04x %04x %04x %04x] %s", i,
-			    pc, core[pc], acc[0], acc[1], acc[2], acc[3], p);
+			if (!trace)
+				trc(i);
 			domus_sendm();
-			printf("\n");
+			fprintf(tf, "\n");
 			break;
 		case 0x0c05:	// WAITANSWER
 			p = Domus3Disass(core[pc], NULL, NULL);
-			printf("%10jd %04x %04x [%04x %04x %04x %04x] %s", i,
-			    pc, core[pc], acc[0], acc[1], acc[2], acc[3], p);
+			if (!trace)
+				trc(i);
 			domus_waita();
-			printf("\n");
+			fprintf(tf, "\n");
 			break;
 		case 0x0ce6: zone(); pc++; break; // CREATEENTRY
 		case 0x0c91: domus_open(); break;
@@ -669,8 +738,8 @@ main(int argc, const char * const *argv)
 			rc3600_exec();
 			break;
 		}
-		if (0)
-			printf("\n");
+		if (trace)
+			fprintf(tf, "\n");
 	}
 
 	return(0);

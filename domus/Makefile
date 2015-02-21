@@ -14,5 +14,6 @@ LDADD	+=	-L../librc3600 -lrc3600
 
 test:	${PROG}
 	#./${PROG} DOMAC BIN.BB LIST.LL PHMAC PH00S
+	sed 's/$$//' src > __.SRC
 	./${PROG} DOMAC BIN.BB LIST.LL SRC
-	# ./${PROG} DOMXR DOMST
+	tail -3 __.LL
