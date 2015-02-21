@@ -20,61 +20,72 @@
 #include "rc3600_io.h"
 
 struct tty2 {
-	int			io_i;
+	int			unit_i;
 	int			mask_i;
-	int			io_o;
+	int			unit_o;
 	int			mask_o;
 	const char		*dev;
 	int			fd;
+
+	int			ichar;
 };
 
 static struct tty2 tty2[] = {
-	{ 010, 14, 011,  14, "/dev/nmdm0A", -1 },
-	{ 050, 13, 051,  13, "/dev/nmdm1A", -1 },
+	{ 010, 14, 011,  14, "/dev/nmdm0A", -1, -1},
+	{ 050, 13, 051,  13, "/dev/nmdm1A", -1, -1},
 };
 
 static unsigned n_tty2 = sizeof(tty2) / sizeof(tty2[0]);
 
-#if 0
-
-int
-TTYI_Input(int chr)
+static void
+ievt(void *priv, int x)
 {
+	struct iodev *iodev = priv;
+	struct tty2 *t2 = iodev->priv;
+	uint8_t u;
+	int i;
 
-	if (ttyi_char != -1 || ttyi_iodev == NULL)
-		return (0);
-	ttyi_char = chr;
-	ttyi_iodev->busy = 1;
-	dev_irq(ttyi_iodev, 0);
-	return (1);
+	(void)x;
+	if (t2->ichar == -1 && iodev->busy) {
+		i = read(t2->fd, &u, 1);
+		if (i == 1) {
+			t2->ichar = u;
+			dev_irq(iodev, 0);
+			iodev->done = 1;
+			ioprint("RD %d %02x", i, t2->ichar);
+		} else {
+			timeout(1000000, ievt, priv, 0);
+		}
+	}
 }
 
 static void
-dev_ttyi(uint16_t ioi, uint16_t *reg, struct iodev *iodev)
+dev_tty2i(uint16_t ioi, uint16_t *reg, struct iodev *iodev)
 {
+	struct tty2 *t2 = iodev->priv;
 
-// fprintf(stderr, "TTYI %04x %04x\n\r", IO_OPER(ioi), IO_ACTION(ioi));
+	(void)reg;
+	(void)t2;
+
 	switch (IO_OPER(ioi)) {
-	case NIO:
-		break;
 	case DIA:
-		ioprint(" %02x", ttyi_char);
-		*reg = ttyi_char;
-		ttyi_char = -1;
+		ioprint("GOT %02x", t2->ichar);
+		*reg = t2->ichar;
+		t2->ichar = -1;
 		irq_lower(iodev);
 		break;
+	case SKPDN:
+		if (iodev->done)
 	default:
-		return;
+		break;
 	}
 	switch (IO_ACTION(ioi)) {
 	case IO_CLEAR:
 		irq_lower(iodev);
 		break;
 	case IO_START:
-		irq_lower(iodev);
-		ttyi_iodev->busy = 1;
-		if (ttyi_char != -1)
-			dev_irq(iodev, 0);
+		iodev->busy = 1;
+		timeout(1000000, ievt, iodev, 0);
 		break;
 	default:
 		break;
@@ -82,19 +93,18 @@ dev_ttyi(uint16_t ioi, uint16_t *reg, struct iodev *iodev)
 	return;
 }
 
-/* TTYO ============================================================= */
-
 static void
-dev_ttyo(uint16_t ioi, uint16_t *reg, struct iodev *iodev)
+dev_tty2o(uint16_t ioi, uint16_t *reg, struct iodev *iodev)
 {
-	static char c;
+	static uint8_t u = 0x21;
+	struct tty2 *t2 = iodev->priv;
 
 // fprintf(stderr, "TTYO %04x %04x\n\r", IO_OPER(ioi), IO_ACTION(ioi));
 	switch (IO_OPER(ioi)) {
 	case NIO:
 		break;
 	case DOA:
-		c = *reg & 0x7f;
+		u = *reg & 0xff;
 		break;
 	default:
 		return;
@@ -106,15 +116,8 @@ dev_ttyo(uint16_t ioi, uint16_t *reg, struct iodev *iodev)
 	case IO_START:
 		irq_lower(iodev);
 		iodev->busy = 1;
-		if (c == '\n' || c == '\r') {
-			fprintf(stderr, "%c", c);
-		} else if (c < ' ' || c > '~') {
-			c = ' ';
-		} else {
-			fprintf(stderr, "%c", c);
-		}
-		fflush(stderr);
-		timeout(11 * (NSEC / tty_speed), dev_irq, iodev, 0);
+		write(t2->fd, &u, 1);
+		timeout(11 * (NSEC / 9600), dev_irq, iodev, 0);
 		break;
 	default:
 		break;
@@ -122,12 +125,11 @@ dev_ttyo(uint16_t ioi, uint16_t *reg, struct iodev *iodev)
 	return;
 }
 
-#endif
-
 int
 config_tty2(char **ap)
 {
 	unsigned n;
+	int fd;
 	struct tty2 *t;
 	struct termios tt;
 
@@ -138,7 +140,7 @@ config_tty2(char **ap)
 		return (0);
 
 	/* Get unit number */
-	n = atoi(ap[0] + 1);
+	n = atoi(ap[0]);
 	assert(n < n_tty2);
 	ap++;
 	if (*ap == NULL)
@@ -147,24 +149,31 @@ config_tty2(char **ap)
 	t = &tty2[n];
 
 	if (!strcmp(ap[0], "config")) {
-		// iodevs[t->io_i].func = dev_ttyi;
-		iodevs[t->io_i].imask = t->mask_i;
-		// iodevs[t->io_o].func = dev_ttyo;
-		iodevs[t->io_o].imask = t->mask_o;
-		if (t->fd >= 0)
-			assert(close(t->fd) == 0);
-		t->fd = open(t->dev, O_RDWR, 0);
-		if (t->fd < 0) {
+		fd = open(t->dev, O_RDWR, 0);
+		if (fd < 0) {
 			printf("Cannot open %s: %s\n", t->dev, strerror(errno));
 			return (1);
 		}
+		if (t->fd >= 0)
+			assert(close(t->fd) == 0);
+		t->fd = fd;
+		t->ichar = -1;
+
 		assert(tcgetattr(t->fd, &tt) == 0);
 		cfmakeraw(&tt);
 		cfsetspeed(&tt, B9600);
 		tt.c_cflag |= CLOCAL;
 		tt.c_cc[VMIN] = 0;
-		tt.c_cc[VTIME] = 10;
+		tt.c_cc[VTIME] = 0;
 		assert(tcsetattr(t->fd, TCSAFLUSH, &tt) == 0);
+
+		iodevs[t->unit_i].func = dev_tty2i;
+		iodevs[t->unit_i].priv = t;
+		iodevs[t->unit_i].imask = t->mask_i;
+		iodevs[t->unit_o].func = dev_tty2o;
+		iodevs[t->unit_o].imask = t->mask_o;
+		iodevs[t->unit_o].priv = t;
+
 		return (1);
 	}
 	return (0);
