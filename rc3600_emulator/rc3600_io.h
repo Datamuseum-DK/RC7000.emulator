@@ -66,6 +66,9 @@ ioconf_f	config_rtc;
 ioconf_f	config_tty;
 int		TTYI_Input(int chr);
 
+/* io_tty2.c */
+ioconf_f	config_tty2;
+
 /* os_domus.c */
 ioconf_f	config_domus;
 

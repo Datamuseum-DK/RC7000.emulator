@@ -935,6 +935,7 @@ main(int argc, char **argv)
 	AddDev(config_dkp);
 	AddDev(config_rtc);
 	AddDev(config_tty);
+	AddDev(config_tty2);
 	AddDev(config_ptp);
 	AddDev(config_ptr);
 	AddDev(config_rc3751);

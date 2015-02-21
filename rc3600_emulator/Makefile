@@ -13,6 +13,7 @@ SRCS	+=	io_ptr.c
 SRCS	+=	io_rc3751.c
 SRCS	+=	io_rtc.c
 SRCS	+=	io_tty.c
+SRCS	+=	io_tty2.c
 SRCS	+=	io_amx.c
 
 SRCS	+=	os_domus.c
@@ -87,3 +88,7 @@ fd2test:	${PROG}
 dkp009:	${PROG}
 	./${PROG} -d -c 'dkp 0 load ../DKP/009/__' \
 		-c 'cpu autoload' -c 'domus msg' -c 'domus sleep'
+
+t2:	${PROG}
+	./${PROG} -d \
+		-c "tty2 1"
