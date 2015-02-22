@@ -164,7 +164,7 @@ main(int argc, char **argv)
 	}
 	printf("Download: %04x\n", GW());
 
-	SendCmd(4, 0x1000, 0x1100, 0x5555, 0);
+	SendCmd(4, 0x1000, 0x2000, 0x5555, 0);
 	printf("Fill: %04x\n", GW());
 
 	SendCmd(3, 0x1000, 0x1100, 0, 0);
@@ -173,6 +173,44 @@ main(int argc, char **argv)
 		assert(0x5555 == i);
 	}
 	printf("Download: %04x\n", GW());
+
+	SendCmd(5, 0, 0, 0, 0);
+	printf("Recal: %04x\n", GW());
+
+	int cyl,lcyl,hd;
+	FILE *ft = fopen("/tmp/_.tx", "w");
+	lcyl = 0;
+	for (cyl = 0; cyl < 203; cyl++) {
+		for (hd = 0; hd < 2; hd++) {
+			if (cyl != lcyl) {
+				SendCmd(7, cyl, 0, 0, 0);
+				i = GW();
+				printf("\nSeek: cyl=%d %04x\n", cyl, i);
+				assert(i == 0x4040);
+				lcyl = cyl;
+			}
+
+			SendCmd(6, cyl, 0x1000, 0x0004 | (hd << 8), 0);
+			i = GW();
+			printf("DKP: DIA=%04x", i);
+			assert(i == 0xc040);
+			i = GW();
+			printf(" DIB=%04x", i);
+			assert(i == 0x1c00);
+			i = GW();
+			printf(" DIC=%04x\n", i);
+			assert(i == (0x00c0 | (hd << 8)));
+
+			SendCmd(3, 0x1000, 0x1c00, 0, 0);
+			for (u = 0; u < 12*256; u++) {
+				i = GW();
+				fputc(i >> 8, ft);
+				fputc(i & 0xff, ft);
+			}
+			fflush(ft);
+			printf("Download: %04x\n", GW());
+		}
+	}
 	
 	return (0);
 }
