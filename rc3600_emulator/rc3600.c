@@ -361,11 +361,18 @@ static uint16_t autorom_fd[32] = {
 /* RC3803 =========================================================== */
 
 static void
-dev_rc3803(uint16_t ioi, uint16_t *reg __unused, struct iodev *iodev __unused)
+dev_rc3803(uint16_t ioi, uint16_t *reg, struct iodev *iodev __unused)
 {
 	uint16_t w;
+	const char *s = "";
 
 	switch(ioi) {
+	case 062700:	s = "Memory Extension";
+		*reg = 0;
+		return;
+		break;
+	case 063600:	s = "Skip Mem ext" ; break;
+	case 060400:	s = "CPU ID"; break;
 	case 062600:	// LDB
 		w = cr(acc[1] >> 1);
 		if (acc[1] & 1)
@@ -373,10 +380,12 @@ dev_rc3803(uint16_t ioi, uint16_t *reg __unused, struct iodev *iodev __unused)
 		else
 			acc[0] = w >> 8;
 		return;
+	case 063200:	s = "Store Byte" ; break;
 	default:
-		printf("\r\n\nUnhandled RC3803 instruction: %06o\r\n", ioi);
-		exit(0);
+		break;
 	}
+	printf("\r\n\nUnhandled RC3803 instruction: %06o %s\r\n", ioi, s);
+	exit(0);
 }
 
 /* CPU ============================================================== */

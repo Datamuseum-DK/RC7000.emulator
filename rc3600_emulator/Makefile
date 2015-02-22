@@ -28,6 +28,8 @@ LDADD	+=	-L../librc3600 -lrc3600
 
 NO_MAN	=	yes.
 
+DKP	=	/home/phk/DDHF/DDHF/Rc3600/DKP
+
 .include <bsd.prog.mk>
 
 rc6000:	${PROG}
@@ -35,7 +37,7 @@ rc6000:	${PROG}
 	
 comal:	${PROG}
 	./${PROG} -d \
-		-c 'dkp 0 load ../DKP/012/__' \
+		-c 'dkp 0 load ${DKP}/012/__' \
 		-c 'amx config 42' \
 		-c 'tty speed 1000000' \
 		-c 'stat config' \
@@ -44,10 +46,11 @@ comal:	${PROG}
 
 domus:	${PROG}
 	./${PROG} -d \
-		-c 'dkp 0 load ../DKP/004/__' \
+		-c 'dkp 0 load ${DKP}/004/__' \
 		-c 'tty speed 1000000' \
 		-c 'stat config' \
 		-c 'lpt config' \
+		-c 'cpu rc3803' \
 		-c 'cpu autoload'
 
 testv:	${PROG}
