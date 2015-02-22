@@ -67,6 +67,51 @@ SendCmd(uint16_t cmd, uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3)
 
 static uint16_t core[32768];
 
+static void
+read_dkp(const char *fn)
+{
+	FILE *ft = fopen(fn, "w");
+	int i, u, cyl,lcyl,hd;
+
+	assert(ft != NULL);
+
+	SendCmd(5, 0, 0, 0, 0);
+	printf("Recal: %04x\n", GW());
+
+	lcyl = 0;
+	for (cyl = 0; cyl < 203; cyl++) {
+		for (hd = 0; hd < 2; hd++) {
+			if (cyl != lcyl) {
+				SendCmd(7, cyl, 0, 0, 0);
+				i = GW();
+				printf("\nSeek: cyl=%d %04x\n", cyl, i);
+				assert(i == 0x4040);
+				lcyl = cyl;
+			}
+
+			SendCmd(6, cyl, 0x1000, 0x0004 | (hd << 8), 0);
+			i = GW();
+			printf("DKP: DIA=%04x", i);
+			assert(i == 0xc040);
+			i = GW();
+			printf(" DIB=%04x", i);
+			assert(i == 0x1c00);
+			i = GW();
+			printf(" DIC=%04x\n", i);
+			assert(i == (0x00c0 | (hd << 8)));
+
+			SendCmd(3, 0x1000, 0x1c00, 0, 0);
+			for (u = 0; u < 12*256; u++) {
+				i = GW();
+				fputc(i >> 8, ft);
+				fputc(i & 0xff, ft);
+			}
+			fflush(ft);
+			printf("Download: %04x\n", GW());
+		}
+	}
+}
+
 int
 main(int argc, char **argv)
 {
@@ -174,43 +219,6 @@ main(int argc, char **argv)
 	}
 	printf("Download: %04x\n", GW());
 
-	SendCmd(5, 0, 0, 0, 0);
-	printf("Recal: %04x\n", GW());
-
-	int cyl,lcyl,hd;
-	FILE *ft = fopen("/tmp/_.tx", "w");
-	lcyl = 0;
-	for (cyl = 0; cyl < 203; cyl++) {
-		for (hd = 0; hd < 2; hd++) {
-			if (cyl != lcyl) {
-				SendCmd(7, cyl, 0, 0, 0);
-				i = GW();
-				printf("\nSeek: cyl=%d %04x\n", cyl, i);
-				assert(i == 0x4040);
-				lcyl = cyl;
-			}
-
-			SendCmd(6, cyl, 0x1000, 0x0004 | (hd << 8), 0);
-			i = GW();
-			printf("DKP: DIA=%04x", i);
-			assert(i == 0xc040);
-			i = GW();
-			printf(" DIB=%04x", i);
-			assert(i == 0x1c00);
-			i = GW();
-			printf(" DIC=%04x\n", i);
-			assert(i == (0x00c0 | (hd << 8)));
-
-			SendCmd(3, 0x1000, 0x1c00, 0, 0);
-			for (u = 0; u < 12*256; u++) {
-				i = GW();
-				fputc(i >> 8, ft);
-				fputc(i & 0xff, ft);
-			}
-			fflush(ft);
-			printf("Download: %04x\n", GW());
-		}
-	}
-	
+	read_dkp("/tmp/_.ty");
 	return (0);
 }
