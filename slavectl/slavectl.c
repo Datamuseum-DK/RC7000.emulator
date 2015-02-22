@@ -112,6 +112,88 @@ read_dkp(const char *fn)
 	}
 }
 
+static void
+dkp_write_upload_track(FILE *fi)
+{
+	uint8_t sect[512];
+	uint16_t ws[256];
+	int i, j, u, sc,s;
+
+	SendCmd(4, 0x1000, 0x1c00, 0, 0);
+	GW();
+	for (sc = 0; sc < 12; sc++) {
+		i = fread(sect, sizeof sect, 1, fi);
+		assert(i == 1);
+		for (i = 0, j = 0; i < 256; i++, j+=2)
+			ws[i] = sect[j] << 8 | sect[j+1];
+		for (j = 256; j > 0; j--)
+			if (ws[255] != ws[j - 1])
+				break;
+		if (j > 200)
+			j = 256;
+
+		if (j > 0) {
+			s = 0x1000 + 0x100 * sc;
+			SendCmd(2, s, s + j, 0, 0);
+			GW();
+			s = 0;
+			for (u = 0; u < j; u++) {
+				s += ws[u];
+				PW(ws[u]);
+			}
+			i = GW();
+			s &= 0xffff;
+			printf(" Upload: %3d %04x %04x", j, i, s);
+			assert(s == i);
+		}
+		if (j != 256 && ws[255] != 0) {
+			s = 0x1000 + 0x100 * sc;
+			SendCmd(4, s + j, s + 0x100, ws[255], 0);
+			printf(" Fill: %3d %04x", 256 - j, GW());
+		}
+		printf("\n");
+	}
+}
+
+static void
+dkp_write(const char *fn)
+{
+	FILE *fi = fopen(fn, "r");
+	int i, cyl,lcyl,hd;
+
+	SendCmd(5, 0, 0, 0, 0);
+	printf("Recal: %04x\n", GW());
+
+	lcyl = 0;
+	for (cyl = 0; cyl < 203; cyl++) {
+		for (hd = 0; hd < 2; hd++) {
+			if (cyl != lcyl) {
+				SendCmd(7, cyl, 0, 0, 0);
+				i = GW();
+				printf("\nSeek: cyl=%d %04x\n", cyl, i);
+				assert(i == 0x4040);
+				lcyl = cyl;
+			}
+			dkp_write_upload_track(fi);
+
+			printf("c%03d h%d ", cyl, hd);
+
+			SendCmd(6, 0x100 | cyl, 0x1000, 0x0004 | (hd << 8), 0);
+			i = GW();
+			printf("DKP: DIA=%04x", i);
+			assert(i == 0xc040);
+			i = GW();
+			printf(" DIB=%04x", i);
+			assert(i == 0x1c02);
+			i = GW();
+			printf(" DIC=%04x\n", i);
+			assert(i == (0x00c0 | (hd << 8))); // emulator
+			//assert(i == (0x0004 | (hd << 8))); // live
+		}
+	}
+
+}
+
 int
 main(int argc, char **argv)
 {
@@ -219,6 +301,8 @@ main(int argc, char **argv)
 	}
 	printf("Download: %04x\n", GW());
 
-	read_dkp("/tmp/_.ty");
+	if (0)
+		read_dkp("/tmp/_.ty");
+	dkp_write("/tmp/_.cb2");
 	return (0);
 }
