@@ -34,7 +34,7 @@ PC(uint8_t u)
 static void
 PW(unsigned u)
 {
-	printf(">>>>%04x %06o\n", u, u);
+	// printf(">>>>%04x %06o\n", u, u);
 	PC(u >> 8);
 	PC(u & 0xff);
 }
@@ -79,19 +79,19 @@ main(int argc, char **argv)
 	uint8_t c;
 	int i;
 
-	(void)argc;
-	(void)argv;
 	setbuf(stderr, NULL);
 	setbuf(stdout, NULL);
 	fi = fopen("../domus/__.SLAVE", "r");
 
-	//fo = open("/dev/cuaU0", O_RDWR);
-	fo = open("/dev/nmdm1B", O_RDWR);
+	if (argc > 1)
+		fo = open(argv[1], O_RDWR);
+	else
+		fo = open("/dev/nmdm1B", O_RDWR);
 	assert(fo >= 0);
 	AZ(tcgetattr(fo, &t));
 	cfmakeraw(&t);
 	cfsetspeed(&t, B9600);
-	t.c_cflag |= CLOCAL;
+	t.c_cflag |= CLOCAL | CSTOPB;
 	t.c_cc[VMIN] = 0;
 	t.c_cc[VTIME] = 1;
 	AZ(tcsetattr(fo, TCSAFLUSH, &t));
@@ -117,7 +117,11 @@ main(int argc, char **argv)
 		}
 	}
 
-	for (u = 0; u < 32; u++) {
+	for (u = 0; u < 3; u++)
+		while (read(fo, &c, 1) > 0)
+			continue;
+
+	for (u = 0; u < 64; u++) {
 		PC(0);
 		i = read(fo, &c, 1);
 		printf("%d %02x %u\n", i, c, u);
@@ -130,7 +134,7 @@ main(int argc, char **argv)
 			}
 		}
 	}
-	t.c_cc[VTIME] = 10;
+	t.c_cc[VTIME] = 50;
 	AZ(tcsetattr(fo, TCSAFLUSH, &t));
 
 	SendCmd(1, 0x00, 0x20, 0, 0);
@@ -143,12 +147,14 @@ main(int argc, char **argv)
 	printf("Sum %04x\n", GW());
 
 	SendCmd(2, 0x1000, 0x1100, 0, 0);
+	printf("Ack: %04x\n", GW());
 	i = 0;
 	for (u = 0; u < 256; u++) {
 		i += u;
 		PW(u);
 	}
-	printf("Upload: %04x\n", GW());
+	printf("Upload: %04x %04x\n", GW(), i);
+
 	SendCmd(1, 0x1000, 0x1100, 0, 0);
 	printf("Sum %04x (%04x)\n", GW(), i & 0xffff);
 	

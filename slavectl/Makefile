@@ -12,3 +12,6 @@ LDADD   +=      -L../librc3600 -lrc3600
 
 test:	${PROG}
 	./${PROG}
+
+live:	${PROG}
+	./${PROG} /dev/cuaU1

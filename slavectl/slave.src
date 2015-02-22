@@ -304,8 +304,8 @@ C01:
 	INC	2,2
 	SUB #	2,3,SZR
 	JMP	?C01A
-	JSR	PUTW
 	JSR	TTYW
+	JSR	PUTW
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -316,6 +316,7 @@ C02:
 	.TXT	"UPLOAD"
 ?C02:
 	LDA	0,ARG1
+	JSR	PUTW
 	STA	0,ARG3
 ?C02A:
 	JSR	GETW
