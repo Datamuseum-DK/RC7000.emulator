@@ -293,6 +293,12 @@ CTBL:
 	C06
 	7.
 	C07
+	8.
+	C08
+	9.
+	C09
+	10.
+	C10
 CTBLE:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -459,6 +465,43 @@ C07:
 	AND	1,2,SNR
 	JMP	.-3
 	DIA	0,59.
+	JSR	TTYW
+	JSR	PUTW
+	JMP	MAIN
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; READ MCR card
+
+.RDXO 8
+C08:
+	JMP	?C08
+	.TXT	"START MCR"
+?C08:
+	LDA	0,ARG1
+	DOB	0,14.
+	LDA	0,ARG2
+	DOAS	0,14.
+	JSR	TTYW
+	JSR	PUTW
+	JMP	MAIN
+
+C09:
+	JMP	?C09
+	.TXT	"MCR BUSY"
+?C09:
+	SUBO	0,0
+	SKPBN	14.
+	INC	0,0
+	JSR	TTYW
+	JSR	PUTW
+	JMP	MAIN
+
+C10:
+	JMP	?C10
+	.TXT	"IORST"
+?C10:
+	IORST
+	IORST
+	SUBO	0,0
 	JSR	TTYW
 	JSR	PUTW
 	JMP	MAIN

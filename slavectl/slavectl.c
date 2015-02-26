@@ -204,7 +204,9 @@ main(int argc, char **argv)
 	unsigned u, a;
 	struct termios t;
 	uint8_t c;
-	int i;
+	int i, j;
+	char buf[BUFSIZ];
+	uint16_t card[80];
 
 	setbuf(stderr, NULL);
 	setbuf(stdout, NULL);
@@ -261,7 +263,7 @@ main(int argc, char **argv)
 			}
 		}
 	}
-	t.c_cc[VTIME] = 50;
+	t.c_cc[VTIME] = 200;
 	AZ(tcsetattr(fo, TCSAFLUSH, &t));
 
 	SendCmd(1, 0x00, 0x20, 0, 0);
@@ -303,6 +305,57 @@ main(int argc, char **argv)
 
 	if (0)
 		read_dkp("/tmp/_.ty");
-	dkp_write("/tmp/_.cb2");
+	if (0)
+		dkp_write("/tmp/_.cb2");
+	
+	while (1) {
+		printf("Press enter to read card:");
+		fgets(buf, sizeof buf, stdin);
+		SendCmd(8, 0x1000, 041, 0, 0);
+		i = GW();
+		printf("Start = %04x\n", i);
+		while (1) {
+			SendCmd(9, 0x1000, 0, 0, 0);
+			i = GW();
+			printf("Busy = %04x, OK ? ", i);
+			fgets(buf, sizeof buf, stdin);
+			if (buf[0] != '\n')
+				break;
+		}
+		SendCmd(10, 0x1000, 0x1000 + 80, 0, 0);
+		i = GW();
+		
+		SendCmd(3, 0x1000, 0x1000 + 80, 0, 0);
+		for (u = 0; u < 80; u++)
+			card[u] = GW();
+
+		for (u = 0; u < 80; u++)
+			printf("%x", (card[u] >> 8) & 0xf);
+		printf("\n");
+		for (u = 0; u < 80; u++)
+			printf("%x", (card[u] >> 4) & 0xf);
+		printf("\n");
+		for (u = 0; u < 80; u++)
+			printf("%x", (card[u] >> 0) & 0xf);
+		printf("\n");
+		for (j = 0x8000; j; j >>= 1) {
+			for (i = 0; i < 80; i++) {
+				if (card[i] & j)
+					printf("#");
+				else
+					printf("|");
+			}
+			printf("  ");
+			for (i = 0; i < 80; i += 2) {
+				if ((card[i]|card[i+1]) & j)
+					printf("#");
+				else
+					printf("|");
+			}
+			printf("\n");
+		}
+		printf("Download: %04x\n", GW());
+	}
+
 	return (0);
 }
