@@ -21,3 +21,10 @@ slave:	${PROG}
 	sed 's/$$//' ../slavectl/slave.src > __.SRC
 	./${PROG} DOMAC BIN.SLAVE LIST.LL SRC
 	tail -3 __.LL
+
+rxmod:	${PROG}
+	cat ../sources/ZMAC ../sources/RXMOS | sed 's/$$//' > __.SRC
+	./${PROG} DOMAC BIN.RXMOD LIST.LL SRC
+	tail -3 __.LL
+	sh prepsrc.sh < __.SRC > /tmp/_
+	ls -l __.SRC /tmp/_
