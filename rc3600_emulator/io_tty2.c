@@ -31,8 +31,8 @@ struct tty2 {
 };
 
 static struct tty2 tty2[] = {
-	{ 010, 14, 011,  14, "/dev/nmdm0A", -1, -1},
-	{ 050, 13, 051,  13, "/dev/nmdm1A", -1, -1},
+	{ 010, 12, 011,  12, "/dev/nmdm0A", -1, -1},
+	{ 050, 11, 051,  11, "/dev/nmdm1A", -1, -1},
 };
 
 static unsigned n_tty2 = sizeof(tty2) / sizeof(tty2[0]);
@@ -46,13 +46,15 @@ ievt(void *priv, int x)
 	int i;
 
 	(void)x;
+	ioprint("TTY2 %d %d", t2->ichar, iodev->busy);
 	if (t2->ichar == -1 && iodev->busy) {
+		assert(iodev->ipen == 0);
 		i = read(t2->fd, &u, 1);
+		assert(i >= 0);
 		if (i == 1) {
 			t2->ichar = u;
-			dev_irq(iodev, 0);
-			iodev->done = 1;
 			ioprint("RD %d %02x", i, t2->ichar);
+			dev_irq(iodev, 0);
 		} else {
 			timeout(1000000, ievt, priv, 0);
 		}
@@ -69,13 +71,11 @@ dev_tty2i(uint16_t ioi, uint16_t *reg, struct iodev *iodev)
 
 	switch (IO_OPER(ioi)) {
 	case DIA:
-		ioprint("GOT %02x", t2->ichar);
+		ioprint("GOT %02x", t2->ichar & 0xff);
 		*reg = t2->ichar;
 		t2->ichar = -1;
 		irq_lower(iodev);
 		break;
-	case SKPDN:
-		if (iodev->done)
 	default:
 		break;
 	}
