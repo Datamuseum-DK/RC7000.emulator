@@ -1,0 +1,208 @@
+; $Id: ZMAC,v 1.5 2007/02/10 09:53:51 phk Exp $
+;
+; Poul-Hennings working version of MCPAR
+
+	.LIST 0
+
+.MACRO Z.ZON
+
+	.PUSH .NOLOC
+	.NOLOC 1
+
+	.IFE ^3
+		*** ; ILLEGAL NO OF BUFFERS ; ***
+		.GOTO FIN
+	.ENDC
+
+	.PUSH .TXTM
+	.TXTM 1
+	.PUSH .TXTN
+	.TXTN 0
+	.PUSH .RDX
+	.RDX 8
+
+	.IFL .ARGCT-9.
+		.PUSH 0
+	.ENDC ENDE
+		.PUSH ^9
+	[ENDE]
+
+	.DO '^5'=='U'
+		.PUSH 0
+		.GOTO NEXT
+	.ENDC
+	.DO     '^5'=='UB'
+		.PUSH   1
+		.GOTO   NEXT
+	.ENDC
+	.DO     '^5'=='F'
+		.PUSH   2
+		.GOTO   NEXT
+	.ENDC
+
+	.DO     '^5'=='FB'
+		.PUSH   3
+		.GOTO   NEXT
+	.ENDC
+
+	.DO     '^5'=='V'
+		.PUSH   4
+		.GOTO   NEXT
+	.ENDC
+
+	.DO     '^5'=='VB'
+		.PUSH   5
+		.GOTO   NEXT
+	.ENDC
+
+	*** ; ILLEGAL RECORD FORMAT ; ***
+	.GOTO   FIN
+[NEXT]
+
+	.IFL    .ARGCT-8.
+		.PUSH   0
+	.ENDC   ENDE
+		.PUSH   ^8
+	[ENDE]
+
+	.IFL    .ARGCT-7.
+		.PUSH   177777
+	.ENDC   ENDE
+		.PUSH   ^7
+	[ENDE]
+
+	.PUSH   .
+	.TXT    '^1'                    ; ZNAME
+	.IFN    .-.POP-3
+		*** ; ILLEGAL NAME LENGTH ; ***
+	.ENDC
+	 Z                       ; SIZE
+	 0                       ; ZMODE
+	 ^2                      ; ZKIND
+	 .POP                    ; ZMASK
+	 ^6                      ; ZGIVE
+	 1                       ; ZFILE
+	 1                       ; ZBLOCK
+	 .POP*2                  ; ZCONV
+	 .+Z-ZBUFF               ; ZBUFF
+	 ^4/2+SSIZE              ; ZSIZE
+	 .POP                    ; ZFORM
+	 .POP                    ; ZLENGTH
+	 .+Z+SSIZE-ZFIRS*2       ; ZFIRST
+	 .+Z+SSIZE-ZTOP*2        ; ZTOP
+	 .+Z-ZUSED               ; ZUSED
+	 ^4                      ; ZSHAREL
+	 0                       ; ZREM
+	.BLK    ZAUX                    ; Z0
+
+	.PUSH   .
+	.PUSH   1
+	.DO     ^3
+		.NOLOC  0
+
+		.NOLOC  1
+		 0                       ; SOPER
+		 0                       ; SCOUNT
+		 0                       ; SADDR
+		 0                       ; SSPEC
+		.IFN    ^3-.TOP
+			 .+SSIZE+(^4/2)-SNEXT    ; SNEXT
+		.ENDC   ENDE
+			.NOLOC  .POP                    ; DUMMY
+			 .POP                    ; SNEXT
+			.PUSH   ^3-1
+		[ENDE]
+		 0                       ; SSTAT
+		 .+1*2                   ; SFIRS
+		.BLK    ^4/2                    ; BUFFER
+		.PUSH   .POP+1
+	.ENDC
+	.NOLOC  .POP                    ; DUMMY
+	.RDX    .POP
+	.TXTN   .POP
+	.TXTM   .POP
+[FIN]
+	.NOLOC  .POP
+%
+
+.MACRO  Z.PCD
+	.PUSH   .NOLOC
+	.NOLOC  1
+	.PUSH   .TXTM
+	.TXTM   1
+	.PUSH   .TXTN
+	.TXTN   0
+
+	 .+0             ; NEXT
+	 .-1             ; PREV
+	 0               ; CHAIN
+	 0               ; CARRY
+	.PUSH   .
+	.TXT    '^1'            ; NAME
+	.IFN    .-.POP-3
+	*** ; ILLEGAL NAME LENGTH ; ***
+	.ENDC
+	 .+0             ; EVENT
+	 .-1             ; EVENT
+	 ^2              ; BUFFER
+	 ^3              ; PROGRAM
+	 1B0             ; STATE
+	 0               ; TIMER
+	 ^4              ; PRIORITY
+	 ^5              ; BREAK
+	 0               ; AC0
+	 0               ; AC1
+	 .-AC2           ; AC2
+	 0               ; AC3
+	 ^6*2            ; PSW
+	 0               ; SAVE
+
+	.TXTN   .POP
+	.TXTM   .POP
+	.NOLOC  .POP
+%
+
+.MACRO Z.MBF
+	.PUSH   .NOLOC
+			 ; MESSAGE BUFFERS
+	.NOLOC  1
+	.PUSH   .RDX
+	.RDX    10
+	.PUSH   1
+	.DO     ^2-1
+	.IFE    .TOP-(.TOP/4*4)-1
+	.IFN    .TOP-1
+	.EJEC
+	.ENDC
+	.ENDC
+	.NOLOC  0
+
+	.NOLOC  1
+	 .+0             ; NEXT
+	 .-1             ; PREV
+	 .+BSIZE-CHAIN   ; CHAIN
+	 BSIZE           ; SIZE
+	 ^1              ; SENDER
+	 0               ; RECEIVER
+	 0               ; MESS0
+	 0               ; MESS1
+	 0               ; MESS2
+	 0               ; MESS3
+
+	.PUSH   .POP+1
+	.ENDC
+	.+0             ; NEXT
+	.-1             ; PREV
+	0               ; CHAIN
+	BSIZE           ; SIZE
+	^1              ; SENDER
+	0               ; RECEIVER
+	0               ; MESS0
+	0               ; MESS1
+	0               ; MESS2
+	0               ; MESS3
+	.NOLOC  .POP
+	.RDX    .POP
+	.NOLOC  .POP
+%
+	.LIST 1

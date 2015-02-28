@@ -1,0 +1,366 @@
+; ------------------------------------------------------------
+; "THE BEER-WARE LICENSE" (Revision 42):
+; <phk@FreeBSD.org> wrote this file.  As long as you retain
+; this notice you can do whatever you want with this stuff. If
+; we meet some day, and you think this stuff is worth it, you
+; can buy me a beer in return.   Poul-Henning Kamp
+; ------------------------------------------------------------
+;
+; XMODEM recive program for RC3600/RC7000/DOMUS
+;
+; The XMODEM communication happens on the TTY2 port
+; (TTI1/TTO1, iodev 050/051)
+;
+; On a RC3803/CPU721 system, TTY2 is typically hardwired
+; for 9600/8/N/2
+;
+
+        .TITL   RXMOD
+        .NREL
+        .RDXO   8
+        .RDX    8
+        .TXTM   1
+        .TXTN   1
+
+; ------------------------------------------------------------
+PGDS:   1B0+1B5
+        LAB00
+        0
+        PCDS-PGDS
+        .TXT    'RXMOD'
+LAB00:
+; ------------------------------------------------------------
+XMBUF:
+	.LOC	.+140.
+
+; ------------------------------------------------------------
+; Receive one char from TTY2
+; In:
+;	AC2 = Delay in 20msec increments
+;	AC3 = Return adress
+; Out (timeout):
+;	AC2 = CUR
+;	-> AC3 + 0
+; Out (rx char):
+;	AC1 = Rx'd char
+;	AC2 = CUR
+;	-> AC3 + 1
+
+?XCH0:	0
+RXCHR:
+	STA	3,?XCH0
+	LDA	1,.40
+	WAITINTERRUPT
+	JMP @	?XCH0
+	DIAS	1,40.
+	LDA	3,?XCH0
+	JMP	+1,3
+
+; ------------------------------------------------------------
+
+DLY1:	2000.			; Long delay (10s Nominal)
+DLY2:	200.			; Short delay (1s Nominal)
+BUF0:	XMBUF			; Rx buffer
+BUFL:	131.			; Frame length
+FNXT:	0			; Prev frame# Rx'd
+NACK:	21.			; CTRL-U
+ACK:	6.			; CTRL-F
+
+BUFN:	0
+BUFP:	0
+
+; ------------------------------------------------------------
+; XMODEM main-loop
+; Entry:
+;	AC3 point to CHAR to TELL
+
+FAIL:
+	LDA	1,+0,3
+	LDA	2,TTADR
+	OUTEND
+
+	NIOC	40.
+	NIOS	40.
+
+	JSR	TELL
+	'ss'
+
+	LDA	2,DLY2		; short timeout
+	JSR	RXCHR
+	JMP	.+2
+	JMP	.-3
+
+AGAIN:
+	JSR	TELL
+	'nn'
+	LDA	0,NACK
+	DOAS	0,41.
+
+FRAME:
+	LDA	0,BUF0
+	STA	0,BUFP
+	LDA	0,BUFL
+	STA	0,BUFN
+
+	LDA	2,DLY1
+	JSR	RXCHR
+	JMP	AGAIN
+
+	LDA	0,.4		; EOT/CTRL-D -> We're done
+	SUBZ #	0,1,SNR
+	JMP 	LPDONE
+
+	LDA	0,.1		; SOH/CTRL-A -> Frame
+	SUBZ #	0,1,SZR
+	JMP	FAILF
+
+MORE:
+	LDA	2,DLY2
+	JSR	RXCHR
+	JMP	FAILT
+
+	STA @	1,BUFP
+	ISZ	BUFP
+	DSZ	BUFN
+	JMP	MORE
+
+	; 1st and 2nd bytes blockno and 255 - blockno
+	LDA	3,BUF0
+	LDA	0,+0,3
+	LDA	1,+1,3
+	ADDZ	0,1
+	LDA	0,.255
+	SUBZ #	0,1,SZR
+	JMP	FAILR
+
+	; Calculate checksum
+
+	INC	3,3
+	INC	3,3
+	STA	3,BUFP
+	LDA	0,.128
+	STA	0,BUFN
+	SUBO	1,1
+SLOOP:
+	LDA	0,+0,3
+	ADDZ	0,1
+	INC	3,3
+	DSZ	BUFN
+	JMP	SLOOP
+
+	LDA	0,.255
+	AND	0,1
+	LDA	0,+0,3
+	SUBZ#	0,1,SZR
+	JMP	FAILZ
+
+	; Now look at the block number
+
+	JSR	TELL
+	'vv'
+
+	OUTSP
+	LDA @	0,BUF0
+	OUTOCTAL
+	OUTSP
+
+	LDA @	0,BUF0
+	MOVZ #	0,0,SNR
+	JMP	FAILZ		; It cannot be zero
+
+	LDA	1,FNXT
+	SUBZ #	0,1,SNR
+	JMP	SKIP		; Same as last, ignore
+
+	INC	1,1
+	SUBZ #	0,1,SZR
+	JMP	FAILZ
+
+SVE:
+	ISZ	FNXT
+	JSR	TELL
+	'ww'
+	LDA	0,.128
+	STA	0,BUFN
+
+WLP:
+	LDA @	1,BUFP
+	LDA	2,FFADR
+	OUTCHAR
+	ISZ	BUFP
+	DSZ	BUFN
+	JMP	WLP
+
+SKIP:
+	JSR 	TELL
+	'aa'
+	LDA	2,TTADR
+	OUTNL
+	LDA	0,ACK
+	DOAS	0,41.
+	JMP	FRAME
+
+FAILC:
+	JSR	FAIL
+	'CC'
+
+FAILF:
+	JSR	FAIL
+	'FF'
+
+FAILR:
+	JSR	FAIL
+	'RR'
+
+FAILT:
+	JSR	FAIL
+	'TT'
+
+FAILZ:
+	JSR	FAIL
+	'??'
+
+; ------------------------------------------------------------
+TTADR:  TTZON
+FFADR:   FZON
+; ------------------------------------------------------------
+; Tell Progress
+; In:
+;	AC3+0 = Progress Char
+;	AC3+1 = Return address
+
+?ELL0:	0
+TELL:
+	LDA	1,+0,3
+	INCZ	3,3
+	STA	3,?ELL0
+	LDA	2,TTADR
+	OUTEND
+	JMP @	?ELL0
+
+; ------------------------------------------------------------
+LPDONE:
+	LDA	0,ACK
+	DOAS	0,41.
+
+	LDA	1,.40
+	LDA	2,.32
+	SETINTERRUPT
+
+        LDA     2,FFADR
+        LDA     1,.1
+        CLOSE
+        JMP     DEAD
+
+BIRTH:
+	STA	1,PARAM
+
+        LDA     0,.3
+        LDA     2,TTADR
+        OPEN
+
+	JMP	DPARAM
+
+B2:
+
+	LDA	0,.1B15
+	LDA	1,.1
+	LDA	2,FFADR
+	CREATEENTRY
+
+        LDA     0,.3
+        LDA     2,FFADR
+        OPEN
+
+	LDA	1,.40
+	LDA	2,CUR
+	SETINTERRUPT
+
+	JSR @	FAILP
+	'II'
+
+FAILP:	FAIL
+
+GIVE:
+
+        MOV     1,0
+        LDA     2,TTAD
+        OUTOCTAL
+
+DEAD:
+        LDA     2,TTAD
+        LDA     1,.1
+        CLOSE
+
+DIEDIEDIE:
+        LDA     1,DEAD1
+        LDA     2,DEAD2
+        SENDM
+        LDA     2,CUR
+        STOPP
+
+; ------------------------------------------------------------
+
+NX:	20.
+
+DPARAM:
+	LDA	3,PARAM
+
+	LDA 	1,+0,3		; 10, 0, <OUR NAME>
+	LDA	0,.10
+	SUBZ#	0,1,SZR
+	JMP	B2
+
+	LDA	1,+1,3
+	LDA	0,.255
+	ANDZ	0,1,SZR
+	JMP	B2
+
+	LDA	1,+5,3		; 10, 0, <OUR FILENAME>
+	LDA	0,.10
+	SUBZ#	0,1,SZR
+	JMP	B2
+
+	LDA	1,+6,3
+	LDA	0,.255
+	ANDZ	0,1,SZR
+	JMP	B2
+
+	LDA	2,FFADR
+	LDA	0,+7,3
+	STA	0,+0,2
+	LDA	0,+8.,3
+	STA	0,+1,2
+	LDA	0,+9.,3
+	STA	0,+2,2
+	JMP	B2
+
+PARAM:	0
+
+DEAD1:
+	.+1
+        1B8
+        0
+        0
+        0
+DEAD2:  .+1
+        .TXT "S<0><0><0><0><0>"
+
+TTAD:   TTZON
+FZON:
+        Z.ZON ZAXXX,1B14+1B13+1B12+1B11,1.,512.,U,GIVE,65535.,0.,0.
+
+TTZON:
+        Z.ZON TTY<0><0>,1.,3.,512.,U,DEAD,65535.,0.,0.
+BUFFX:
+        Z.MBF   PCDS,5.
+PCDS:
+        Z.PCD   RXMOD,BUFFX,PGDS,33.,DIEDIEDIE,BIRTH
+	0	; .BUF
+	0	; .ADDRE
+	0	; .COUNT
+	0	; .RESER
+	0	; .CONVT
+	CLEAR	; .CLINT
+
+        .END    PCDS
