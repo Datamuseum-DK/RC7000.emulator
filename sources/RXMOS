@@ -17,7 +17,7 @@
 
         .TITL   RXMOD
         .NREL
-        .RDXO   8
+        .RDXO   16
         .RDX    8
         .TXTM   1
         .TXTN   1
@@ -58,8 +58,30 @@ RXCHR:
 
 ; ------------------------------------------------------------
 
-DLY1:	2000.			; Long delay (10s Nominal)
-DLY2:	200.			; Short delay (1s Nominal)
+FAILS:
+	JSR	FAIL
+	.TXT	' Checksum fails<0>'
+
+FAILF:
+	JSR	FAIL
+	.TXT	' Not SOH (Frame start)<0>'
+
+FAILR:
+	JSR	FAIL
+	.TXT	' Record# fails check<0>'
+
+FAILT:
+	JSR	FAIL
+	.TXT	' Timeout<0>'
+
+FAILZ:
+	JSR	FAIL
+	.TXT	' Wrong Record#<0>'
+
+; ------------------------------------------------------------
+
+DLY1:	500.			; Long delay (10s Nominal)
+DLY2:	50.			; Short delay (1s Nominal)
 BUF0:	XMBUF			; Rx buffer
 BUFL:	131.			; Frame length
 FNXT:	0			; Prev frame# Rx'd
@@ -72,27 +94,22 @@ BUFP:	0
 ; ------------------------------------------------------------
 ; XMODEM main-loop
 ; Entry:
-;	AC3 point to CHAR to TELL
+;	AC3 point to string to output
 
 FAIL:
-	LDA	1,+0,3
+	MOVZL	3,0
 	LDA	2,TTADR
-	OUTEND
+	OUTTEXT
+	OUTNL
 
 	NIOC	40.
 	NIOS	40.
-
-	JSR	TELL
-	'ss'
 
 	LDA	2,DLY2		; short timeout
 	JSR	RXCHR
 	JMP	.+2
 	JMP	.-3
 
-AGAIN:
-	JSR	TELL
-	'nn'
 	LDA	0,NACK
 	DOAS	0,41.
 
@@ -104,7 +121,7 @@ FRAME:
 
 	LDA	2,DLY1
 	JSR	RXCHR
-	JMP	AGAIN
+	JMP	FAILT
 
 	LDA	0,.4		; EOT/CTRL-D -> We're done
 	SUBZ #	0,1,SNR
@@ -152,13 +169,11 @@ SLOOP:
 	AND	0,1
 	LDA	0,+0,3
 	SUBZ#	0,1,SZR
-	JMP	FAILZ
+	JMP	FAILS
 
 	; Now look at the block number
 
-	JSR	TELL
-	'vv'
-
+	LDA	2,TTADR
 	OUTSP
 	LDA @	0,BUF0
 	OUTOCTAL
@@ -178,8 +193,6 @@ SLOOP:
 
 SVE:
 	ISZ	FNXT
-	JSR	TELL
-	'ww'
 	LDA	0,.128
 	STA	0,BUFN
 
@@ -192,53 +205,26 @@ WLP:
 	JMP	WLP
 
 SKIP:
-	JSR 	TELL
-	'aa'
 	LDA	2,TTADR
+	LDA	1,?OO
+	OUTCHAR
+	LDA	1,?KK
+	OUTCHAR
 	OUTNL
 	LDA	0,ACK
 	DOAS	0,41.
 	JMP	FRAME
 
-FAILC:
-	JSR	FAIL
-	'CC'
-
-FAILF:
-	JSR	FAIL
-	'FF'
-
-FAILR:
-	JSR	FAIL
-	'RR'
-
-FAILT:
-	JSR	FAIL
-	'TT'
-
-FAILZ:
-	JSR	FAIL
-	'??'
+?OO:	'OO'
+?KK:	'KK'
 
 ; ------------------------------------------------------------
+
 TTADR:  TTZON
 FFADR:   FZON
-; ------------------------------------------------------------
-; Tell Progress
-; In:
-;	AC3+0 = Progress Char
-;	AC3+1 = Return address
-
-?ELL0:	0
-TELL:
-	LDA	1,+0,3
-	INCZ	3,3
-	STA	3,?ELL0
-	LDA	2,TTADR
-	OUTEND
-	JMP @	?ELL0
 
 ; ------------------------------------------------------------
+
 LPDONE:
 	LDA	0,ACK
 	DOAS	0,41.
@@ -259,9 +245,36 @@ BIRTH:
         LDA     2,TTADR
         OPEN
 
-	JMP	DPARAM
+	; Try to pull a filename out of arguments
+	LDA	3,PARAM
 
-B2:
+	LDA 	1,+0,3		; 10, 0, <OUR NAME>
+	LDA	0,.10
+	SUBZ#	0,1,SZR
+	JMP	PARER
+
+	LDA	1,+1,3
+	LDA	0,.255
+	ANDZ	0,1,SZR
+	JMP	PARER
+
+	LDA	1,+5,3		; 10, 0, <OUR FILENAME>
+	LDA	0,.10
+	SUBZ#	0,1,SZR
+	JMP	PARER
+
+	LDA	1,+6,3
+	LDA	0,.255
+	ANDZ	0,1,SZR
+	JMP	PARER
+
+	LDA	2,FFADR		; Copy name to file zone
+	LDA	0,+7,3
+	STA	0,+0,2
+	LDA	0,+8.,3
+	STA	0,+1,2
+	LDA	0,+9.,3
+	STA	0,+2,2
 
 	LDA	0,.1B15
 	LDA	1,.1
@@ -277,15 +290,24 @@ B2:
 	SETINTERRUPT
 
 	JSR @	FAILP
-	'II'
+	.TXT	'XMODEM receiver ready...<0>'
 
 FAILP:	FAIL
+
+PARER:
+	JSR	DIE
+	.TXT	'USAGE: RXMOD filename<13.><10.><0>'
 
 GIVE:
 
         MOV     1,0
         LDA     2,TTAD
         OUTOCTAL
+
+DIE:
+	MOVZL	3,0
+        LDA     2,TTAD
+	OUTTEXT
 
 DEAD:
         LDA     2,TTAD
@@ -300,40 +322,6 @@ DIEDIEDIE:
         STOPP
 
 ; ------------------------------------------------------------
-
-NX:	20.
-
-DPARAM:
-	LDA	3,PARAM
-
-	LDA 	1,+0,3		; 10, 0, <OUR NAME>
-	LDA	0,.10
-	SUBZ#	0,1,SZR
-	JMP	B2
-
-	LDA	1,+1,3
-	LDA	0,.255
-	ANDZ	0,1,SZR
-	JMP	B2
-
-	LDA	1,+5,3		; 10, 0, <OUR FILENAME>
-	LDA	0,.10
-	SUBZ#	0,1,SZR
-	JMP	B2
-
-	LDA	1,+6,3
-	LDA	0,.255
-	ANDZ	0,1,SZR
-	JMP	B2
-
-	LDA	2,FFADR
-	LDA	0,+7,3
-	STA	0,+0,2
-	LDA	0,+8.,3
-	STA	0,+1,2
-	LDA	0,+9.,3
-	STA	0,+2,2
-	JMP	B2
 
 PARAM:	0
 
