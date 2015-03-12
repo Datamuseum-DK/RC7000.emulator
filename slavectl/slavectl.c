@@ -65,6 +65,117 @@ SendCmd(uint16_t cmd, uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3)
 	PW(65536-(unsigned)s);
 }
 
+static int
+DoCmd(uint16_t cmd, uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3,
+    uint16_t *upload, uint16_t uplen, uint16_t *download, uint16_t downlen)
+{
+	uint16_t s;
+	int i;
+
+	PW(cmd); s = cmd;
+	PW(a0);  s += a0;
+	PW(a1);  s += a1;
+	PW(a2);  s += a2;
+	PW(a3);  s += a3;
+	PW(65536-(unsigned)s);
+	printf("%04x(%04x,%04x,%04x,%04x) S|%04x",
+	    cmd, a0, a1, a2, a3, 0x10000 - s);
+
+	s = GW();
+	if (s == 0)
+		return (-1);
+	if (s & 0x8000) {
+		/* upload */
+		printf(" U[%d]", 0x10000 - s);
+		i = s;
+		i += uplen;
+		assert(i == 0x10000);
+		for (i = s; i < 0x10000; i++) {
+			PW(*upload++);
+			uplen--;
+		}
+		s = GW();
+	}
+	printf(" D[%d]", s);
+	assert(!(s & 0x8000));
+	assert(s != 0);
+	/* download */
+	assert(s == downlen);
+	for (i = 0; i < s; i++)
+		*download++ = GW();
+	return (0);
+}
+
+static void
+Sync(void)
+{
+	int i;
+
+	printf("SYNC\t");
+	i = DoCmd(0, 0, 0, 0, 0, NULL, 0, NULL, 0);
+	printf(" => %d\n", i);
+	assert(i == -1);
+}
+
+static uint16_t
+ChkSum(uint16_t from, uint16_t to)
+{
+	uint16_t in[1];
+
+	assert(from < to);
+	printf("CHKSUM\t");
+	DoCmd(1, from, to, 0, 0, NULL, 0, in, 1);
+	printf(" => S|%04x\n", in[0]);
+	return (in[0]);
+}
+
+static void
+Upload(uint16_t dst, uint16_t *fm, uint16_t len)
+{
+	uint16_t in[1], s = 0;
+	int i;
+
+	printf("UPLOAD\t");
+	DoCmd(2, dst, dst+len, 0, 0, fm, len, in, 1);
+	for (i = 0; i < len; i++)
+		s += fm[i];
+	printf(" => S|%04x (%04x)\n", in[0], s);
+	assert(s == in[0]);
+	ChkSum(dst, dst + len);
+}
+
+static void
+Download(uint16_t src, uint16_t *to, uint16_t len)
+{
+	uint16_t in[len + 1], s = 0;
+	int i;
+
+	printf("DNLOAD\t");
+	DoCmd(3, src, src+len, 0, 0, NULL, 0, in, len + 1);
+	for (i = 0; i < len; i++) {
+		to[i] = in[i];
+		s += in[i];
+	}
+	printf(" => S|%04x (%04x)\n", in[len], s);
+	assert(s == in[len]);
+}
+
+static void
+Fill(uint16_t dst, uint16_t len, uint16_t val)
+{
+	uint16_t in[1], s = 0;
+	int i;
+
+	printf("FILL\t");
+	DoCmd(4, dst, dst+len, val, 0, NULL, 0, in, 1);
+	for (i = 0; i < len; i++)
+		s += val;
+	printf(" => S|%04x (%04x)\n", in[0], s);
+	assert(s == in[0]);
+}
+
+
+
 static uint16_t core[32768];
 
 static void
@@ -266,42 +377,12 @@ main(int argc, char **argv)
 	t.c_cc[VTIME] = 200;
 	AZ(tcsetattr(fo, TCSAFLUSH, &t));
 
-	SendCmd(1, 0x00, 0x20, 0, 0);
-	printf("Sum %04x\n", GW());
-
-	SendCmd(1, 0x00, 0x20, 0, 0);
-	printf("Sum %04x\n", GW());
-
-	SendCmd(1, 0x1000, 0x1100, 0, 0);
-	printf("Sum %04x\n", GW());
-
-	SendCmd(2, 0x1000, 0x1100, 0, 0);
-	printf("Ack: %04x\n", GW());
-	i = 0;
-	for (u = 0; u < 256; u++) {
-		i += u;
-		PW(u);
-	}
-	printf("Upload: %04x %04x\n", GW(), i);
-
-	SendCmd(1, 0x1000, 0x1100, 0, 0);
-	printf("Sum %04x (%04x)\n", GW(), i & 0xffff);
-	
-	SendCmd(3, 0x1000, 0x1100, 0, 0);
-	for (u = 0; u < 256; u++) {
-		assert(u == GW());
-	}
-	printf("Download: %04x\n", GW());
-
-	SendCmd(4, 0x1000, 0x2000, 0x5555, 0);
-	printf("Fill: %04x\n", GW());
-
-	SendCmd(3, 0x1000, 0x1100, 0, 0);
-	for (u = 0; u < 256; u++) {
-		i = GW();
-		assert(0x5555 == i);
-	}
-	printf("Download: %04x\n", GW());
+	Sync();
+	i = ChkSum(0x0000, 0x0020);
+	memset(card, 0x7f, sizeof card);
+	Upload(0x1000, card, 80);
+	Download(0x1000, card, 80);
+	Fill(0x1000, 4, 0x1234);
 
 	if (0)
 		read_dkp("/tmp/_.ty");

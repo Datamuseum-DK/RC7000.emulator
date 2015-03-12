@@ -1,9 +1,44 @@
-; The Program Load Program in RC3803 autoboot ROM
+; ------------------------------------------------------ ; "THE BEER-WARE LICENSE" (Revision 42):
+; <phk@FreeBSD.ORG> wrote this file.  As long as you
+; retain this notice you can do whatever you want with
+; this stuff. If we meet some day, and you think this
+; stuff is worth it, you can buy me a beer in return.
+; Poul-Henning Kamp
+; ------------------------------------------------------
+; Slave program for remote controlled operation of
+; RC3803 hardware
+;
+; Traffic is sort of a RPC protocol, with all traffic
+; in 16 bit (big-endian) words.
+;
+; A transaction consists of two or three phases:
+;	1) Command
+;	2) Upload (optional)
+;	3) Download
+;
+; The command phase consists of 6 words:
+;	Command
+;	4 arguments
+;	Checksum
+;
+; On checksum error, RC3803 responds with a single
+; zero word (= zero length download)
+;
+; If the transaction requires data to be uploaded
+; The RC3803 responds with negative number of words
+; expected, after which the controller sends these
+; words.
+;
+; The download phase (mandatory) starts with the
+; RC3803 sending number of words to download, followed
+; by these words.
+; ------------------------------------------------------
 
 	.TXTM	1
 	.TXTN	0
 	.RDXO	16
 
+	; RC3803 magic instructions
 	.RDX	8
 	.DUSR	LDB =	62601
 	.DUSR	STB =	63201
@@ -204,30 +239,29 @@ MAIN:
 	JMP	ESUM
 	JSR	TTYCM
 	LDA	2,?CTB
-	LDA	3,?CTE
 	LDA	0,CMD0
 LOOP:
+	LDA	0,CMD0
 	LDA	1,+0,2
 	SUB #	1,0,SNR
 	JMP	FOUND
-	INC	2,2
-	INC	2,2
-	SUB #	2,3,SZR
+	LDA	2,+1,2
+	MOV #	2,2,SZR
 	JMP	LOOP
 	JSR 	TTYS
 	?NOTF*2
 	JMP	MAIN
 
 FOUND:
-	LDA	3,+1,2
-	MOV	3,1
+	MOV	2,1
+	INC	1,1
+	INC	1,1
 	INCZL	1,1
 	JSR 	TTYS1
 	JSR	TTYSP
-	JMP @	+1,2
+	JMP @ 	+2,2
 
-?CTB:	CTBL
-?CTE:	CTBLE
+?CTB:	C00
 
 ?NOTF:	.TXT	" CMD NOT FOUND"
 
@@ -274,39 +308,14 @@ TTYCM:
 	JMP	@?TTYC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Command lookup table
-
-CTBL:
-	0.
-	C00
-	1.
-	C01
-	2.
-	C02
-	3.
-	C03
-	4.
-	C04
-	5.
-	C05
-	6.
-	C06
-	7.
-	C07
-	8.
-	C08
-	9.
-	C09
-	10.
-	C10
-CTBLE:
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Just returns status zero
+;; Just returns status zero as if checksum error
+;; This is used for initial synhronization.
 
 C00:	
-	JMP	?C00
-	.TXT	"PING"
+	0.
+	C01
+	?C00
+	.TXT	"SYNC"
 ?C00:
 	SUBO	0,0
 	JSR	PUTW
@@ -316,18 +325,23 @@ C00:
 ;; Returns SUM(ARG1::ARG2)
 
 C01:	
-	JMP	?C01
+	1.
+	C02
+	?C01
 	.TXT	"SUM"
 ?C01:
+	; Traffic:  1 = sum
+	SUBZL	0,0
+	JSR	PUTW
 	SUBO	0,0
 	LDA	2,ARG1
 	LDA	3,ARG2
-?C01A:
+?C01B:
 	LDA	1,+0,2
 	ADDZ	1,0
 	INC	2,2
 	SUB #	2,3,SZR
-	JMP	?C01A
+	JMP	?C01B
 	JSR	TTYW
 	JSR	PUTW
 	JMP	MAIN
@@ -336,11 +350,17 @@ C01:
 ;; Uploads (ARG1:ARG2) returns sum
 
 C02:	
-	JMP	?C02
+	2.
+	C03
+	?C02
 	.TXT	"UPLOAD"
 ?C02:
+	; Traffic: negative word count
 	LDA	0,ARG1
+	LDA	1,ARG2
+	SUBZ	1,0
 	JSR	PUTW
+	LDA	0,ARG1
 	STA	0,ARG3
 ?C02A:
 	JSR	GETW
@@ -348,17 +368,25 @@ C02:
 	ISZ	ARG3
 	LDA	2,ARG3
 	LDA	3,ARG2
-	SUB #	2,3,SZR
+	SUBZ #	2,3,SZR
 	JMP	?C02A
-	JMP	C01
+	JMP	?C01
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Downloads (ARG1:ARG2) returns sum
 
 C03:	
-	JMP	?C03
+	3.
+	C04
+	?C03
 	.TXT	"DOWNLOAD"
 ?C03:
+	; Traffic: postive word count + sum
+	LDA	0,ARG2
+	LDA	1,ARG1
+	SUBZ	1,0
+	INC	0,0
+	JSR	PUTW
 	SUBO	1,1
 ?C03A:
 	LDA @	0,ARG1
@@ -378,9 +406,14 @@ C03:
 ;; Fills (ARG1:ARG2) with ARG3, returns sum
 
 C04:	
-	JMP	?C04
+	4.
+	C05
+	?C04
 	.TXT	"FILL"
 ?C04:
+	; Traffic:  1 = sum
+	SUBZL	0,0
+	JSR	PUTW
 	SUBO	0,0
 ?C04A:
 	LDA 	1,ARG3
@@ -390,7 +423,7 @@ C04:
 	LDA	2,ARG1
 	LDA	3,ARG2
 	SUB #	2,3,SZR
-	JMP	?C04
+	JMP	?C04A
 	JSR	TTYW
 	JSR	PUTW
 	JMP	MAIN
@@ -399,7 +432,9 @@ C04:
 ;; RECAL diablo
 
 C05:
-	JMP	?C05
+	5.
+	C06
+	?C05
 	.TXT	"RECAL DKP"
 ?C05:
 	.RDX	8
@@ -419,7 +454,9 @@ C05:
 ;; READ/WRITE diablo
 
 C06:
-	JMP	?C06
+	6.
+	C07
+	?C06
 	.TXT	"DKP READ/WRITE"
 ?C06:
 	LDA	0, ARG2
@@ -450,7 +487,9 @@ C06:
 ;; SEEK diablo
 
 C07:
-	JMP	?C07
+	7.
+	C08
+	?C07
 	.TXT	"SEEK DKP"
 	.RDX	8
 ?C07A:		175000
@@ -473,7 +512,9 @@ C07:
 
 .RDXO 8
 C08:
-	JMP	?C08
+	8.
+	C09
+	?C08
 	.TXT	"START MCR"
 ?C08:
 	LDA	0,ARG1
@@ -485,7 +526,9 @@ C08:
 	JMP	MAIN
 
 C09:
-	JMP	?C09
+	9.
+	C10
+	?C09
 	.TXT	"MCR BUSY"
 ?C09:
 	SUBO	0,0
@@ -496,7 +539,9 @@ C09:
 	JMP	MAIN
 
 C10:
-	JMP	?C10
+	10.
+	0
+	?C10
 	.TXT	"IORST"
 ?C10:
 	IORST
