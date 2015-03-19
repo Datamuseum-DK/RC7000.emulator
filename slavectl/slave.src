@@ -313,7 +313,7 @@ C00:
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Returns [fletcher]SUM(ARG1::ARG2)
+;; Returns SUM(ARG1::ARG2)
 
 C01:	
 	1.
@@ -321,7 +321,7 @@ C01:
 	?C01
 	.TXT	"SUM"
 ?C01:
-	; Traffic:  2 = sum
+	; Traffic:  1 = sum
 	SUBZL	0,0
 	JSR	PUTW
 	SUBO	0,0
