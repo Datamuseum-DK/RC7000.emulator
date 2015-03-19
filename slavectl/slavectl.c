@@ -96,13 +96,14 @@ DoCmd(uint16_t cmd, uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3,
 		}
 		s = GW();
 	}
-	printf(" D[%d]", s);
+	printf(" D %4d", s);
 	assert(!(s & 0x8000));
 	assert(s != 0);
 	/* download */
 	assert(s == downlen);
 	for (i = 0; i < s; i++)
 		*download++ = GW();
+	putchar('\t');
 	return (0);
 }
 
@@ -145,7 +146,7 @@ Upload(uint16_t dst, uint16_t *fm, uint16_t len)
 }
 
 static void
-Download(uint16_t src, uint16_t *to, uint16_t len)
+Download(uint16_t src, uint16_t len, uint16_t *to)
 {
 	uint16_t in[len + 1], s = 0;
 	int i;
@@ -161,19 +162,49 @@ Download(uint16_t src, uint16_t *to, uint16_t len)
 }
 
 static void
-Fill(uint16_t dst, uint16_t len, uint16_t val)
+Fill(uint16_t from, uint16_t to, uint16_t val)
 {
 	uint16_t in[1], s = 0;
 	int i;
 
+	assert(to > from);
 	printf("FILL\t");
-	DoCmd(4, dst, dst+len, val, 0, NULL, 0, in, 1);
-	for (i = 0; i < len; i++)
+	DoCmd(4, from, to, val, 0, NULL, 0, in, 1);
+	for (i = 0; i < (to-from); i++)
 		s += val;
 	printf(" => S|%04x (%04x)\n", in[0], s);
 	assert(s == in[0]);
 }
 
+/**********************************************************************/
+
+static uint16_t
+DKP_recal(void)
+{
+	uint16_t retval;
+
+	printf("RECAL\t");
+	DoCmd(20, 0, 0, 0, 0, NULL, 0, &retval, 1);
+	return (retval);
+}
+
+static void
+DKP_rw(uint16_t doa, uint16_t dob, uint16_t doc, uint16_t *result)
+{
+
+	printf("RW\t");
+	DoCmd(21, doa, dob, doc, 0, NULL, 0, result, 3);
+}
+
+static uint16_t
+DKP_seek(uint16_t cyl)
+{
+	uint16_t retval;
+
+	printf("SEEK\t");
+	DoCmd(22, cyl, 0, 0, 0, NULL, 0, &retval, 1);
+	return (retval);
+}
 
 
 static uint16_t core[32768];
@@ -183,42 +214,37 @@ read_dkp(const char *fn)
 {
 	FILE *ft = fopen(fn, "w");
 	int i, u, cyl,lcyl,hd;
+	uint16_t ret[12 * 256];
 
 	assert(ft != NULL);
 
-	SendCmd(5, 0, 0, 0, 0);
-	printf("Recal: %04x\n", GW());
+	printf("Recal: %04x\n", DKP_recal());
 
 	lcyl = 0;
 	for (cyl = 0; cyl < 203; cyl++) {
 		for (hd = 0; hd < 2; hd++) {
 			if (cyl != lcyl) {
-				SendCmd(7, cyl, 0, 0, 0);
-				i = GW();
-				printf("\nSeek: cyl=%d %04x\n", cyl, i);
+				i = DKP_seek(cyl);
+				printf("Seek: cyl=%d %04x\n", cyl, i);
 				assert(i == 0x4040);
 				lcyl = cyl;
 			}
 
-			SendCmd(6, cyl, 0x1000, 0x0004 | (hd << 8), 0);
-			i = GW();
-			printf("DKP: DIA=%04x", i);
-			assert(i == 0xc040);
-			i = GW();
-			printf(" DIB=%04x", i);
-			assert(i == 0x1c00);
-			i = GW();
-			printf(" DIC=%04x\n", i);
-			assert(i == (0x00c0 | (hd << 8)));
+			DKP_rw(cyl, 0x1000, 0x0004 | (hd << 8), ret);
+			printf("DKP: DIA=%04x", ret[0]);
+			assert(ret[0] == 0xc040);
+			printf(" DIB=%04x", ret[1]);
+			assert(ret[1] == 0x1c00);
+			printf(" DIC=%04x\n", ret[2]);
+			assert(ret[2] == (0x00c0 | (hd << 8)));
 
-			SendCmd(3, 0x1000, 0x1c00, 0, 0);
+			Download(0x1000, 0x0c00, ret);
 			for (u = 0; u < 12*256; u++) {
-				i = GW();
+				i = ret[u];
 				fputc(i >> 8, ft);
 				fputc(i & 0xff, ft);
 			}
 			fflush(ft);
-			printf("Download: %04x\n", GW());
 		}
 	}
 }
@@ -281,7 +307,7 @@ dkp_write(const char *fn)
 			if (cyl != lcyl) {
 				SendCmd(7, cyl, 0, 0, 0);
 				i = GW();
-				printf("\nSeek: cyl=%d %04x\n", cyl, i);
+				printf(" Seek: cyl=%d %04x\n", cyl, i);
 				assert(i == 0x4040);
 				lcyl = cyl;
 			}
@@ -381,11 +407,13 @@ main(int argc, char **argv)
 	i = ChkSum(0x0000, 0x0020);
 	memset(card, 0x7f, sizeof card);
 	Upload(0x1000, card, 80);
-	Download(0x1000, card, 80);
-	Fill(0x1000, 4, 0x1234);
+	Download(0x1000, 80, card);
+	Fill(0x1000, 0x1004, 0x1234);
 
-	if (0)
+	if (1) {
 		read_dkp("/tmp/_.ty");
+		exit (0);
+	}
 	if (0)
 		dkp_write("/tmp/_.cb2");
 	
