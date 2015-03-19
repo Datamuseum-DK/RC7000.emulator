@@ -1,5 +1,8 @@
 PROG	=	slavectl
 
+SRCS	+=	slavectl.c
+SRCS	+=	slavectl_dkp.c
+
 NO_MAN	=	sorry
 
 WARNS   ?=      6
@@ -14,4 +17,4 @@ test:	${PROG}
 	./${PROG}
 
 live:	${PROG}
-	./${PROG} /dev/cuaU1
+	./${PROG} /dev/cuaU0

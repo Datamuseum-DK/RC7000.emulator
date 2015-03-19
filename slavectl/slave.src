@@ -313,7 +313,7 @@ C00:
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Returns SUM(ARG1::ARG2)
+;; Returns [fletcher]SUM(ARG1::ARG2)
 
 C01:	
 	1.
@@ -321,18 +321,18 @@ C01:
 	?C01
 	.TXT	"SUM"
 ?C01:
-	; Traffic:  1 = sum
+	; Traffic:  2 = sum
 	SUBZL	0,0
 	JSR	PUTW
 	SUBO	0,0
-	LDA	2,ARG1
-	LDA	3,ARG2
+	LDA	3,ARG1
 ?C01B:
-	LDA	1,+0,2
+	LDA	1,+0,3
 	ADDZ	1,0
-	INC	2,2
-	SUB #	2,3,SZR
+	INC	3,3
+	DSZ	ARG2
 	JMP	?C01B
+
 	JSR	TTYW
 	JSR	PUTW
 	JMP	MAIN
@@ -347,19 +347,18 @@ C02:
 	.TXT	"UPLOAD"
 ?C02:
 	; Traffic: negative word count
-	LDA	0,ARG1
-	LDA	1,ARG2
-	SUBZ	1,0
+	LDA	0,ARG2
+	NEG	0,0
 	JSR	PUTW
 	LDA	0,ARG1
 	STA	0,ARG3
+	LDA	0,ARG2
+	STA	0,ARG4
 ?C02A:
 	JSR	GETW
 	STA @	1,ARG3
 	ISZ	ARG3
-	LDA	2,ARG3
-	LDA	3,ARG2
-	SUBZ #	2,3,SZR
+	DSZ	ARG4
 	JMP	?C02A
 	JMP	?C01
 
@@ -570,7 +569,7 @@ C09:
 
 C10:
 	10.
-	0
+	C999
 	?C10
 	.TXT	"IORST"
 ?C10:
@@ -584,6 +583,25 @@ C10:
 	JSR	TTYW
 	JSR	PUTW
 	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Return end address
+
+C999:
+	999.
+	0
+	?C999
+	.TXT	"FREEMEM"
+?C999:
+	; Traffic:  1 = adress
+	SUBZL	0,0
+	JSR	PUTW
+
+	LDA	0,.+4
+	JSR	TTYW
+	JSR	PUTW
+	JMP	MAIN
+	END
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
