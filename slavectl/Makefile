@@ -2,6 +2,7 @@ PROG	=	slavectl
 
 SRCS	+=	slavectl.c
 SRCS	+=	slavectl_dkp.c
+SRCS	+=	slavectl_mem.c
 
 NO_MAN	=	sorry
 

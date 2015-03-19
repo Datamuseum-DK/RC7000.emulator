@@ -15,8 +15,9 @@
 
 #include "slavectl.h"
 
-
-/**********************************************************************/
+/**********************************************************************
+ * Slave calls
+ */
 
 static uint16_t
 DKP_recal(void)
@@ -45,6 +46,10 @@ DKP_seek(uint16_t cyl)
 	DoCmd(22, cyl, 0, 0, 0, NULL, 0, &retval, 1);
 	return (retval);
 }
+
+/**********************************************************************
+ * Canned functions
+ */
 
 void
 DKP_download(const char *fn)
