@@ -73,6 +73,17 @@ Fill(uint16_t from, uint16_t to, uint16_t val)
 }
 
 uint16_t
+Compare(uint16_t src1, uint16_t src2, uint16_t len)
+{
+	uint16_t in[1];
+
+	printf("COMPA\t");
+	DoCmd(5, src1, src2, len, 0, NULL, 0, in, 1);
+	printf(" => R|%04x\n", in[0]);
+	return (in[0]);
+}
+
+uint16_t
 FreeMem(void)
 {
 	uint16_t retval;

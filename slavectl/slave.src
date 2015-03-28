@@ -397,7 +397,7 @@ C03:
 
 C04:	
 	4.
-	C20
+	C05
 	?C04
 	.TXT	"FILL"
 ?C04:
@@ -414,6 +414,35 @@ C04:
 	LDA	3,ARG2
 	SUB #	2,3,SZR
 	JMP	?C04A
+	JSR	TTYW
+	JSR	PUTW
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Compare (ARG1:ARG2) length ARG3 return zero if equal
+
+C05:
+	5.
+	C20
+	?C05
+	.TXT	"COMPA"
+?C05:
+	; Traffic: 1 = result
+	SUBZL	0,0
+	JSR	PUTW
+	LDA	2,ARG1
+	LDA	3,ARG2
+?C05A:
+	LDA	0,+0,2
+	LDA	1,+0,3
+	SUBZ	1,0,SZR
+	JMP	?C05B
+	INC	2,2
+	INC	3,3
+	DSZ	ARG3
+	JMP	?C05A
+	SUBO	0,0
+?C05B:
 	JSR	TTYW
 	JSR	PUTW
 	JMP	MAIN
