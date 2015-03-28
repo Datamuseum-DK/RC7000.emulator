@@ -8,6 +8,7 @@ int DoCmd(uint16_t cmd, uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3,
 
 /* slavectl_dkp.c */
 void DKP_download(const char *fn);
+void DKP_smartdownload(const char *fn);
 
 /* slavectl_mem.c */
 uint16_t FreeMem(void);

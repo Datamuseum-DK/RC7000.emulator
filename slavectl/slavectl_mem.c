@@ -90,5 +90,6 @@ FreeMem(void)
 
 	printf("FREEMEM\t");
 	DoCmd(999, 0, 0, 0, 0, NULL, 0, &retval, 1);
+	printf(" => R|%04x\n", retval);
 	return (retval);
 }

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <termios.h>
 #include <sys/stat.h>
+#include <sys/queue.h>
 
 #include "domusobj.h"
 #include "rc3600.h"
@@ -98,6 +99,112 @@ DKP_download(const char *fn)
 		}
 	}
 }
+
+/**********************************************************************
+ * Canned functions
+ */
+
+struct ss {
+	TAILQ_ENTRY(ss) 	list;
+	uint16_t		addr;
+	uint16_t		sum;
+	uint16_t		c,h,s;
+	uint16_t		valid;
+	uint16_t		w[256];
+};
+
+void
+DKP_smartdownload(const char *fn)
+{
+	FILE *ft;
+	TAILQ_HEAD(,ss)		head;
+	uint16_t a, b, c, lc, h, s;
+	struct ss *ss, *ss2;
+	uint16_t ret[3];
+	int i, j, hits = 0;
+
+	ft = fopen(fn, "w");
+	if (ft == NULL) {
+		perror(fn);
+		exit(2);
+	}
+
+	TAILQ_INIT(&head);
+	a = FreeMem();
+	b = 0;
+	while (a + 0x100 <= 0x8000) {
+		ss = calloc(sizeof *ss, 1);
+		assert(ss != NULL);
+		ss->addr = a;
+		TAILQ_INSERT_TAIL(&head, ss, list);
+		a += 0x100;
+		b++;
+	}
+	printf("%u buffers\n", b);
+
+	printf("Recal: %04x\n", DKP_recal());
+	lc = 0xffff;
+
+	for (c = 0; c < 203; c++) {
+		if (c != lc) {
+			i = DKP_seek(c);
+			printf("Seek: cyl=%d %04x\n", c, i);
+			assert(i == 0x4040);
+			lc = c;
+		}
+		for (h = 0; h < 2; h++) {
+			for (s = 0; s < 12; s++) {
+				ss = TAILQ_FIRST(&head);
+				DKP_rw(c, ss->addr,
+				    0x000f | (s << 4) | (h << 8), ret);
+				printf("DKP: DIA=%04x", ret[0]);
+				assert(ret[0] == 0xc040);
+				printf(" DIB=%04x", ret[1]);
+				assert(ret[1] == ss->addr + 0x100);
+				printf(" DIC=%04x\n", ret[2]);
+				assert(ret[2] == (((s+1) << 4) | (h << 8)));
+				ss->sum = ChkSum(ss->addr, 0x100);
+				ss->c = c;
+				ss->h = h;
+				ss->s = s;
+				i = 1;
+				TAILQ_FOREACH(ss2, &head, list) {
+					if (ss2 == ss)
+						continue;
+					if (!ss2->valid)
+						continue;
+					if (ss2->sum != ss->sum)
+						continue;
+					i = Compare(ss->addr, ss2->addr, 0x100);
+					printf("HIT %d/%d/%d", c, h, s);
+					printf("= %d/%d/%d %04x %d\n",
+					    ss2->c, ss2->h, ss2->s,
+					    ss->sum, i);
+					if (i == 0) {
+						ss = ss2;
+						hits++;
+						break;
+					}
+				}
+				if (i) {
+					Download(ss->addr, 0x100, ss->w);
+					ss->valid = 1;
+				} 
+				for (j = 0; j < 256; j++) {
+					i = ss->w[j];
+					fputc(i >> 8, ft);
+					fputc(i & 0xff, ft);
+				}
+				TAILQ_REMOVE(&head, ss, list);
+				TAILQ_INSERT_TAIL(&head, ss, list);
+			}
+		}
+	}
+	printf("Cache hits %d\n", hits);
+}
+
+/**********************************************************************
+ */
 
 #if 0
 

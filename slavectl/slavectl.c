@@ -219,6 +219,11 @@ main(int argc, char **argv)
 	FreeMem();
 	printf("AMAX = %x\n", amax);
 
+	if (1) {
+		DKP_smartdownload("/tmp/_.ty");
+		exit (0);
+	}
+	
 	if (0) {
 		DKP_download("/tmp/_.ty");
 		exit (0);
