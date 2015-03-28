@@ -423,7 +423,7 @@ C04:
 
 C05:
 	5.
-	C20
+	C06
 	?C05
 	.TXT	"COMPA"
 ?C05:
@@ -443,6 +443,85 @@ C05:
 	JMP	?C05A
 	SUBO	0,0
 ?C05B:
+	JSR	TTYW
+	JSR	PUTW
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; CHEW 
+;; Returns checksum and last word repeat count for a
+;; sequence of buffers (ie: sectors read from DKP)
+;; ARG1 = Buffer address
+;; ARG2 = sector length
+;; ARG3 = sector count
+
+C06:
+	06.
+	C07
+	?C06
+	.TXT	"CHEW"
+?C06A:	0
+?C06D:	0
+?C06:
+	; Traffic: two times ARG3
+	LDA	0,ARG3
+	MOVZL	0,0
+	JSR	PUTW
+?C06B:
+	LDA	0,ARG2
+	STA	0,?C06A
+	SUBO	0,0
+	SUBO	2,2
+	STA	2,?C06D
+?C06C:
+	LDA @	1,ARG1
+	ISZ	ARG1
+	ADDZ	1,0
+
+	SUBZ#	1,2,SZR
+	JMP	?C06E
+	ISZ	?C06D
+	JMP	?C06F
+?C06E:
+	SUBO	2,2
+	STA	2,?C06D
+	MOV	1,2
+?C06F:
+	DSZ	?C06A
+	JMP	?C06C
+
+	JSR	PUTW
+	LDA	0,?C06D
+	JSR	PUTW
+
+	DSZ	ARG3
+	JMP	?C06B
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; MOVE ARG1 to ARG2 length ARG3 return sum
+
+C07:
+	7.
+	C20
+	?C07
+	.TXT	"MOVE"
+?C07:
+	; Traffic:  1 = sum
+	SUBZL	0,0
+	JSR	PUTW
+	SUBO	0,0
+	LDA	3,ARG1
+	LDA	2,ARG2
+?C07B:
+	LDA	1,+0,3
+	STA	1,+0,2
+	ADDZ	1,0
+	INC	3,3
+	INC	2,2
+	DSZ	ARG3
+	JMP	?C07B
+
 	JSR	TTYW
 	JSR	PUTW
 	JMP	MAIN

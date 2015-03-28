@@ -83,6 +83,26 @@ Compare(uint16_t src1, uint16_t src2, uint16_t len)
 	return (in[0]);
 }
 
+void
+Chew(uint16_t src, uint16_t buflen, uint16_t bufcnt, uint16_t *res)
+{
+
+	printf("CHEW\t");
+	DoCmd(6, src, buflen, bufcnt, 0, NULL, 0, res, bufcnt * 2);
+	printf("\n");
+}
+
+uint16_t
+Move(uint16_t src, uint16_t dst, uint16_t len)
+{
+	uint16_t in[1];
+
+	printf("MOVE\t");
+	DoCmd(7, src, dst, len, 0, NULL, 0, in, 1);
+	printf(" => S|%04x\n", in[0]);
+	return (in[0]);
+}
+
 uint16_t
 FreeMem(void)
 {

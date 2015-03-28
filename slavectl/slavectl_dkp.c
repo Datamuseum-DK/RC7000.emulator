@@ -104,8 +104,8 @@ DKP_download(const char *fn)
  * Canned functions
  */
 
-struct ss {
-	TAILQ_ENTRY(ss) 	list;
+struct sd {
+	TAILQ_ENTRY(sd) 	list;
 	uint16_t		addr;
 	uint16_t		sum;
 	uint16_t		c,h,s;
@@ -117,11 +117,12 @@ void
 DKP_smartdownload(const char *fn)
 {
 	FILE *ft;
-	TAILQ_HEAD(,ss)		head;
-	uint16_t a, b, c, lc, h, s;
-	struct ss *ss, *ss2;
+	TAILQ_HEAD(,sd)		head;
+	uint16_t a0, a, b, c, lc, h, s;
+	struct sd *ss, *ss2;
 	uint16_t ret[3];
-	int i, j, hits = 0;
+	uint16_t chew[24];
+	int i, j, hits = 0, rpts = 0, zeros = 0;
 
 	ft = fopen(fn, "w");
 	if (ft == NULL) {
@@ -130,7 +131,8 @@ DKP_smartdownload(const char *fn)
 	}
 
 	TAILQ_INIT(&head);
-	a = FreeMem();
+	a0 = a = FreeMem();
+	a += 0xc00;
 	b = 0;
 	while (a + 0x100 <= 0x8000) {
 		ss = calloc(sizeof *ss, 1);
@@ -153,30 +155,40 @@ DKP_smartdownload(const char *fn)
 			lc = c;
 		}
 		for (h = 0; h < 2; h++) {
+			printf("===== cyl %d head %d =====\n", c, h);
+
+			DKP_rw(c, a0, 0x0004 | (h << 8), ret);
+			printf("DKP: DIA=%04x", ret[0]);
+			assert(ret[0] == 0xc040);
+			printf(" DIB=%04x", ret[1]);
+			assert(ret[1] == a0 + 0xc00);
+			printf(" DIC=%04x\n", ret[2]);
+			assert(ret[2] == ((12 << 4) | (h << 8)));
+			Chew(a0, 0x100, 12, chew);
+
 			for (s = 0; s < 12; s++) {
+				if (chew[s + s + 1] == 0x100) {
+					for (j = 0; j < 512; j++)
+						fputc(0, ft);
+					zeros++;
+					printf("zero %d/%d/%d\n", c, h, s);
+					continue;
+				}
+				a = a0 + s * 0x100;
 				ss = TAILQ_FIRST(&head);
-				DKP_rw(c, ss->addr,
-				    0x000f | (s << 4) | (h << 8), ret);
-				printf("DKP: DIA=%04x", ret[0]);
-				assert(ret[0] == 0xc040);
-				printf(" DIB=%04x", ret[1]);
-				assert(ret[1] == ss->addr + 0x100);
-				printf(" DIC=%04x\n", ret[2]);
-				assert(ret[2] == (((s+1) << 4) | (h << 8)));
-				ss->sum = ChkSum(ss->addr, 0x100);
+				ss->sum = chew[s + s];
 				ss->c = c;
 				ss->h = h;
 				ss->s = s;
+				ss->valid = 0;
 				i = 1;
 				TAILQ_FOREACH(ss2, &head, list) {
-					if (ss2 == ss)
-						continue;
 					if (!ss2->valid)
 						continue;
 					if (ss2->sum != ss->sum)
 						continue;
-					i = Compare(ss->addr, ss2->addr, 0x100);
-					printf("HIT %d/%d/%d", c, h, s);
+					i = Compare(a, ss2->addr, 0x100);
+					printf("hit %d/%d/%d", c, h, s);
 					printf("= %d/%d/%d %04x %d\n",
 					    ss2->c, ss2->h, ss2->s,
 					    ss->sum, i);
@@ -187,7 +199,13 @@ DKP_smartdownload(const char *fn)
 					}
 				}
 				if (i) {
-					Download(ss->addr, 0x100, ss->w);
+					ret[0] = Move(a, ss->addr, 0x100);
+					assert(ret[0] == chew[s+s]);
+					rpts += chew[s + s + 1];
+					j = 0x100 - chew[s + s + 1];
+					Download(ss->addr, j, ss->w);
+					for (;j < 0x100; j++)
+						ss->w[j] = ss->w[j - 1];
 					ss->valid = 1;
 				} 
 				for (j = 0; j < 256; j++) {
@@ -200,7 +218,9 @@ DKP_smartdownload(const char *fn)
 			}
 		}
 	}
-	printf("Cache hits %d\n", hits);
+	printf("Zero %d sectors\n", zeros);
+	printf("Cache hit %d sectors\n", hits);
+	printf("Repeat %d chars\n", rpts);
 }
 
 /**********************************************************************
