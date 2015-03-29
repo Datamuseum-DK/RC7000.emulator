@@ -103,6 +103,22 @@ Move(uint16_t src, uint16_t dst, uint16_t len)
 	return (in[0]);
 }
 
+void
+DownloadAndMove(uint16_t src, uint16_t len, uint16_t dst, uint16_t *to)
+{
+	uint16_t in[len + 1], s = 0;
+	int i;
+
+	printf("DNLMOV\t");
+	DoCmd(8, src, len, dst, 0, NULL, 0, in, len + 1);
+	for (i = 0; i < len; i++) {
+		to[i] = in[i];
+		s += in[i];
+	}
+	printf(" => S|%04x (%04x)\n", in[len], s);
+	assert(s == in[len]);
+}
+
 uint16_t
 FreeMem(void)
 {

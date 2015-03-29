@@ -52,62 +52,11 @@ DKP_seek(uint16_t cyl)
  * Canned functions
  */
 
-void
-DKP_download(const char *fn)
-{
-	FILE *ft;
-	int i, u, cyl,lcyl,hd;
-	uint16_t ret[12 * 256];
-
-	ft = fopen(fn, "w");
-	if (ft == NULL) {
-		perror(fn);
-		exit(2);
-	}
-
-	printf("Recal: %04x\n", DKP_recal());
-
-	lcyl = 0;
-	for (cyl = 0; cyl < 203; cyl++) {
-		for (hd = 0; hd < 2; hd++) {
-			if (cyl != lcyl) {
-				i = DKP_seek(cyl);
-				printf("Seek: cyl=%d %04x\n", cyl, i);
-				assert(i == 0x4040);
-				lcyl = cyl;
-			}
-
-			DKP_rw(cyl, 0x1000, 0x0004 | (hd << 8), ret);
-			printf("DKP: DIA=%04x", ret[0]);
-			assert(ret[0] == 0xc040);
-			printf(" DIB=%04x", ret[1]);
-			assert(ret[1] == 0x1c00);
-			printf(" DIC=%04x\n", ret[2]);
-			assert(ret[2] == (0x00c0 | (hd << 8)));
-
-			if (0) {
-				Download(0x1000, 0x0c00, ret);
-				for (u = 0; u < 12*256; u++) {
-					i = ret[u];
-					fputc(i >> 8, ft);
-					fputc(i & 0xff, ft);
-				}
-			} else {
-				ChkSum(0x1000, 0xc00);
-			}
-			fflush(ft);
-		}
-	}
-}
-
-/**********************************************************************
- * Canned functions
- */
-
 struct sd {
-	TAILQ_ENTRY(sd) 	list;
+	TAILQ_ENTRY(sd)	list;
 	uint16_t		addr;
 	uint16_t		sum;
+	uint16_t		len;
 	uint16_t		c,h,s;
 	uint16_t		valid;
 	uint16_t		w[256];
@@ -120,9 +69,9 @@ DKP_smartdownload(const char *fn)
 	TAILQ_HEAD(,sd)		head;
 	uint16_t a0, a, b, c, lc, h, s;
 	struct sd *ss, *ss2;
-	uint16_t ret[3];
+	uint16_t ret[128];
 	uint16_t chew[24];
-	int i, j, hits = 0, rpts = 0, zeros = 0;
+	int i, j, hits = 0, miss = 0, rpts = 0, zeros = 0;
 
 	ft = fopen(fn, "w");
 	if (ft == NULL) {
@@ -187,27 +136,32 @@ DKP_smartdownload(const char *fn)
 						continue;
 					if (ss2->sum != ss->sum)
 						continue;
-					i = Compare(a, ss2->addr, 0x100);
-					printf("hit %d/%d/%d", c, h, s);
-					printf("= %d/%d/%d %04x %d\n",
-					    ss2->c, ss2->h, ss2->s,
-					    ss->sum, i);
+					i = Compare(a, ss2->addr, ss2->len);
 					if (i == 0) {
+						printf("hit %d/%d/%d", c, h, s);
+						printf("= %d/%d/%d %04x %d\n",
+						    ss2->c, ss2->h, ss2->s,
+						    ss->sum, chew[s+s+1]);
 						ss = ss2;
 						hits++;
 						break;
+					} else {
+						miss++;
+						printf("miss %d/%d/%d", c, h, s);
+						printf("= %d/%d/%d %04x %d\n",
+						    ss2->c, ss2->h, ss2->s,
+						    ss->sum, i);
 					}
 				}
 				if (i) {
-					ret[0] = Move(a, ss->addr, 0x100);
-					assert(ret[0] == chew[s+s]);
 					rpts += chew[s + s + 1];
 					j = 0x100 - chew[s + s + 1];
-					Download(ss->addr, j, ss->w);
+					ss->len = j;
+					DownloadAndMove(a, j, ss->addr, ss->w);
 					for (;j < 0x100; j++)
 						ss->w[j] = ss->w[j - 1];
 					ss->valid = 1;
-				} 
+				}
 				for (j = 0; j < 256; j++) {
 					i = ss->w[j];
 					fputc(i >> 8, ft);
@@ -223,6 +177,7 @@ DKP_smartdownload(const char *fn)
 	printf("CMD count %lu\n", cmd_count);
 	printf("Zero %d sectors\n", zeros);
 	printf("Cache hit %d sectors\n", hits);
+	printf("Cache miss %d sectors\n", miss);
 	printf("Repeat %d words\n", rpts);
 }
 

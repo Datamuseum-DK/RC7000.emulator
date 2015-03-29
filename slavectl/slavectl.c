@@ -24,7 +24,7 @@ unsigned long	cmd_count;
 static int
 xfgetc(void *priv)
 {
-        return fgetc(priv);
+	return fgetc(priv);
 }
 
 static void
@@ -132,9 +132,9 @@ static uint16_t core[65536];
 int
 main(int argc, char **argv)
 {
-        struct domus_obj_file *dof;
-        struct domus_obj_obj *doo;
-        struct domus_obj_rec *dor;
+	struct domus_obj_file *dof;
+	struct domus_obj_obj *doo;
+	struct domus_obj_rec *dor;
 	FILE *fi;
 	unsigned u, a, amax;
 	struct termios t;
@@ -156,25 +156,27 @@ main(int argc, char **argv)
 	cfmakeraw(&t);
 	cfsetspeed(&t, B9600);
 	t.c_cflag |= CLOCAL | CSTOPB;
+	// t.c_cflag |= CDSR_OFLOW;
 	t.c_cc[VMIN] = 0;
 	t.c_cc[VTIME] = 1;
 	AZ(tcsetattr(fo, TCSAFLUSH, &t));
 
 	assert(fi != NULL);
-	dof = ReadDomusObj(xfgetc, fi, "-", 1);
+	dof = ReadDomusObj(xfgetc, fi, "-", 0);
 	doo = TAILQ_FIRST(&dof->objs);
 	assert(doo != NULL);
-	for (u = 0; u < 64; u++) 
+	for (u = 0; u < 64; u++)
 		PC(0);
 
 	PC(0x01);
-		
+
 	amax = 0;
+	printf("Loading");
 	TAILQ_FOREACH(dor, &doo->recs, list) {
 		if (WVAL(dor->w[0]) != 2)
 			continue;
 		a = WVAL(dor->w[6]);
-		printf("---> %04x\n", a);
+		printf(" %04x", a);
 		for (u = 7; u < dor->nw; u++, a++) {
 			assert(WRELOC(dor->w[u]) == 1);
 			core[a] = WVAL(dor->w[u]);
@@ -183,8 +185,10 @@ main(int argc, char **argv)
 				amax = a;
 		}
 	}
+	printf("\n");
+	printf("Last address = 0x%x\n", amax);
 
-	// Flush serial port
+	// Flush serial port.
 	for (u = 0; u < 3; u++)
 		while (read(fo, &c, 1) > 0)
 			continue;
@@ -192,12 +196,12 @@ main(int argc, char **argv)
 	for (u = 0; u < 64; u++) {
 		PC(0);
 		i = read(fo, &c, 1);
-		printf("%d %02x %u\n", i, c, u);
+		printf(".");
 		if (i == 1 && c == 0) {
 			i = read(fo, &c, 1);
-			printf("  %d %02x %u\n", i, c, u);
+			printf("0");
 			if (i == 1 && c == 0) {
-				printf("Sync!\n");
+				printf(" Sync!\n");
 				break;
 			}
 		}
@@ -226,18 +230,12 @@ main(int argc, char **argv)
 	Fill(0x2000, 0x2001, 0x1235);
 	Compare(0x1000, 0x2000, 0x0080);
 	FreeMem();
-	printf("AMAX = %x\n", amax);
 
 	if (1) {
-		DKP_smartdownload("/tmp/_.ty");
+		DKP_smartdownload("/tmp/_.dkp");
 		exit (0);
 	}
-	
-	if (0) {
-		DKP_download("/tmp/_.ty");
-		exit (0);
-	}
-	
+
 	while (0) {
 		printf("Press enter to read card:");
 		fgets(buf, sizeof buf, stdin);
@@ -254,7 +252,7 @@ main(int argc, char **argv)
 		}
 		SendCmd(10, 0x1000, 0x1000 + 80, 0, 0);
 		i = GW();
-		
+
 		SendCmd(3, 0x1000, 0x1000 + 80, 0, 0);
 		for (u = 0; u < 80; u++)
 			card[u] = GW();

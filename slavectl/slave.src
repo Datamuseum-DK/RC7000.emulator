@@ -272,6 +272,10 @@ ESUM:
 	?ESUM*2
 	LDA	0,?ESUA
 	JSR	TTYW
+	JSR	TTYC
+	13.*256.
+	JSR	TTYC
+	10.*256.
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -512,7 +516,7 @@ C06:
 
 C07:
 	7.
-	C20
+	C08
 	?C07
 	.TXT	"MOVE"
 ?C07:
@@ -531,6 +535,34 @@ C07:
 	DSZ	ARG3
 	JMP	?C07B
 
+	JSR	PUTWT
+	JMP	MAIN
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Dnload and move ARG1 length ARG2 to ARG3 returns sum
+
+C08:	
+	8.
+	C20
+	?C08
+	.TXT	"DNLMOV"
+?C08:
+	; Traffic: postive word count + sum
+	LDA	0,ARG2
+	INC	0,0
+	JSR	PUTW
+	SUBO	1,1
+	LDA	2,ARG1
+?C08A:
+	LDA 	0,+0,2
+	STA @	0,ARG3
+	INC	2,2
+	ISZ	ARG3
+	ADDZ	0,1
+	JSR	PUTW
+	DSZ	ARG2
+	JMP	?C08A
+	MOV	1,0
 	JSR	PUTWT
 	JMP	MAIN
 
@@ -607,7 +639,7 @@ C21:
 
 C22:
 	22.
-	C08
+	C30
 	?C22
 	.TXT	"SEEK DKP"
 	.RDX	8
@@ -633,12 +665,12 @@ C22:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; READ MCR card
 
-C08:
-	8.
-	C09
-	?C08
+C30:
+	30.
+	C31
+	?C30
 	.TXT	"START MCR"
-?C08:
+?C30:
 	; Traffic:  1 = status
 	SUBZL	0,0
 	JSR	PUTW
@@ -653,12 +685,12 @@ C08:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Is MCR busy ?
 
-C09:
-	9.
-	C10
-	?C09
+C31:
+	31.
+	C100
+	?C31
 	.TXT	"MCR BUSY?"
-?C09:
+?C31:
 	; Traffic:  1 = status
 	SUBZL	0,0
 	JSR	PUTW
@@ -672,12 +704,12 @@ C09:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Issue IORST
 
-C10:
-	10.
+C100:
+	100.
 	C999
-	?C10
+	?C100
 	.TXT	"IORST"
-?C10:
+?C100:
 	; Traffic:  1 = ack
 	SUBZL	0,0
 	JSR	PUTW
