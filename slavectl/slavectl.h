@@ -5,6 +5,10 @@
 int DoCmd(uint16_t cmd, uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3,
     uint16_t *upload, uint16_t uplen, uint16_t *download, uint16_t downlen);
 
+extern unsigned long rx_count;
+extern unsigned long tx_count;
+extern unsigned long cmd_count;
+
 
 /* slavectl_dkp.c */
 void DKP_download(const char *fn);

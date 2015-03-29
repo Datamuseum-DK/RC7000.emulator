@@ -218,9 +218,12 @@ DKP_smartdownload(const char *fn)
 			}
 		}
 	}
+	printf("RX count %lu bytes\n", rx_count);
+	printf("TX count %lu bytes\n", tx_count);
+	printf("CMD count %lu\n", cmd_count);
 	printf("Zero %d sectors\n", zeros);
 	printf("Cache hit %d sectors\n", hits);
-	printf("Repeat %d chars\n", rpts);
+	printf("Repeat %d words\n", rpts);
 }
 
 /**********************************************************************

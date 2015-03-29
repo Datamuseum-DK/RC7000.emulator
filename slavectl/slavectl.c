@@ -17,6 +17,10 @@
 
 static int fo;
 
+unsigned long	rx_count;
+unsigned long	tx_count;
+unsigned long	cmd_count;
+
 static int
 xfgetc(void *priv)
 {
@@ -26,7 +30,7 @@ xfgetc(void *priv)
 static void
 PC(uint8_t u)
 {
-	// printf(">>%02x\n", u);
+	tx_count++;
 	assert(1 == write(fo, &u, 1));
 }
 
@@ -48,6 +52,7 @@ GW(void)
 	assert(i == 1);
 	i = read(fo, c + 1, 1);
 	assert(i == 1);
+	rx_count += 2;
 	return ((c[0] << 8) | c[1]);
 }
 
@@ -71,6 +76,7 @@ DoCmd(uint16_t cmd, uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3,
 	uint16_t s;
 	int i;
 
+	cmd_count++;
 	PW(cmd); s = cmd;
 	PW(a0);  s += a0;
 	PW(a1);  s += a1;
@@ -196,6 +202,9 @@ main(int argc, char **argv)
 			}
 		}
 	}
+
+	rx_count = 0;
+	tx_count = 0;
 	t.c_cc[VTIME] = 200;
 	AZ(tcsetattr(fo, TCSAFLUSH, &t));
 
