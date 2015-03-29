@@ -97,19 +97,6 @@ HW:	.TXT "<13><10><10>TTY2 SLAVE PROGRAM<13><10>"
 ;; TTY In/Out
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-TTYSP:	LDA	0,.+2
-	JMP	TTY
-	32.
-
-TTYNL:	LDA	0,.+7
-	DOAS	0,9.
-	SKPDN	9.
-	JMP	.-1
-	LDA	0,.+2
-	JMP	TTY
-	13.
-	10.
-
 TTYC:
 	LDA	0,+0,3
 	MOVS	0,0
@@ -173,6 +160,7 @@ C15:	15
 HEX:	.TXT "0123456789abcdef"
 HEX2:	HEX*2
 
+VERBO:	0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Put Word pendant to AUTOLOAD's GETW
@@ -189,13 +177,36 @@ PUTW:
 	JMP	.-1
 	JMP	+0,3
 
+?PUT1:	0
+?PUT2:	0
+PUTWT:
+	STA	0,?PUT1
+	STA	3,?PUT2
+	JSR	PUTW
+	LDA	0,VERBO
+	MOVZL	0,0,SNC
+	JMP @	?PUT2
+	JSR	TTYC
+	' '
+	LDA	0,?PUT1
+	JSR	TTYW
+	JMP @	?PUT2
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 BIRTH:
 	JSR	TTYS
 	HW*2
 MAIN:
-	JSR	TTYNL
+	READS	0
+	STA	0,VERBO
+	MOVZL	0,0,SNC
+	JMP	MAIN1
+	JSR	TTYC
+	13.*256.
+	JSR	TTYC
+	10.*256.
+MAIN1:
 	SUBO	2,2
 	JSR	GETW
 	STA	1,CMD0
@@ -216,7 +227,11 @@ MAIN:
 	STA	1,CSUM
 	ADDZ	1,2,SZR
 	JMP	ESUM
+
+	LDA	0,VERBO
+	MOVZL	0,0,SZC
 	JSR	TTYCM
+
 	LDA	2,?CTB
 	LDA	0,CMD0
 LOOP:
@@ -236,8 +251,11 @@ FOUND:
 	INC	1,1
 	INC	1,1
 	INCZL	1,1
+
+	LDA	0,VERBO
+	MOVZL	0,0,SZC
 	JSR 	TTYS1
-	JSR	TTYSP
+
 	JMP @ 	+2,2
 
 ?CTB:	C00
@@ -267,24 +285,30 @@ TTYCM:
 	'['
 	LDA	0,CMD0
 	JSR	TTYW
-	JSR	TTYSP
+	JSR	TTYC
+	' '
 	LDA	0,ARG1
 	JSR	TTYW
-	JSR	TTYSP
+	JSR	TTYC
+	' '
 	LDA	0,ARG2
 	JSR	TTYW
-	JSR	TTYSP
+	JSR	TTYC
+	' '
 	LDA	0,ARG3
 	JSR	TTYW
-	JSR	TTYSP
+	JSR	TTYC
+	' '
 	LDA	0,ARG4
 	JSR	TTYW
-	JSR	TTYSP
+	JSR	TTYC
+	' '
 	LDA	0,CSUM
 	JSR	TTYW
 	JSR	TTYC
 	']'
-	JSR	TTYSP
+	JSR	TTYC
+	' '
 	JMP	@?TTYC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -322,8 +346,7 @@ C01:
 	DSZ	ARG2
 	JMP	?C01B
 
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -377,8 +400,7 @@ C03:
 	SUB #	2,3,SZR
 	JMP	?C03A
 	MOV	1,0
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,8 +425,7 @@ C04:
 	LDA	3,ARG2
 	SUB #	2,3,SZR
 	JMP	?C04A
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -432,8 +453,7 @@ C05:
 	JMP	?C05A
 	SUBO	0,0
 ?C05B:
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -511,8 +531,7 @@ C07:
 	DSZ	ARG3
 	JMP	?C07B
 
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -550,8 +569,7 @@ C20:
 		175000
 	.RDX	10
 	DIA	0,59.
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -577,18 +595,11 @@ C21:
 	JMP	.-1
 
 	DIA	0,59.
-	JSR	TTYW
-	JSR	PUTW
-
-	JSR	TTYSP
+	JSR	PUTWT
 	DIB	0,59.
-	JSR	TTYW
-	JSR	PUTW
-
-	JSR	TTYSP
+	JSR	PUTWT
 	DIC	0,59.
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -616,8 +627,7 @@ C22:
 	AND	1,2,SNR
 	JMP	.-3
 	DIA	0,59.
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -637,8 +647,7 @@ C08:
 	DOB	0,14.
 	LDA	0,ARG2
 	DOAS	0,14.
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -657,8 +666,7 @@ C09:
 	SUBO	0,0
 	SKPBN	14.
 	INC	0,0
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -677,8 +685,7 @@ C10:
 	IORST
 	IORST
 	SUBO	0,0
-	JSR	TTYW
-	JSR	PUTW
+	JSR	PUTWT
 	JMP	MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -694,9 +701,8 @@ C999:
 	SUBZL	0,0
 	JSR	PUTW
 
-	LDA	0,.+4
-	JSR	TTYW
-	JSR	PUTW
+	LDA	0,.+3
+	JSR	PUTWT
 	JMP	MAIN
 	END
 
