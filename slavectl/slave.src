@@ -182,14 +182,15 @@ PUTW:
 PUTWT:
 	STA	0,?PUT1
 	STA	3,?PUT2
-	JSR	PUTW
-	LDA	0,VERBO
-	MOVZL	0,0,SNC
-	JMP @	?PUT2
+	LDA	1,VERBO
+	MOVZL	1,1,SNC
+	JMP 	?PUT3
 	JSR	TTYC
 	' '
 	LDA	0,?PUT1
 	JSR	TTYW
+?PUT3:
+	JSR	PUTW
 	JMP @	?PUT2
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
