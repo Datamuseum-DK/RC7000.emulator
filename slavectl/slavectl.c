@@ -230,6 +230,7 @@ main(int argc, char **argv)
 	Fill(0x2000, 0x2001, 0x1235);
 	Compare(0x1000, 0x2000, 0x0080);
 	FreeMem();
+	DoCmd(100, 0, 0, 0, 0, NULL, 0, card, 1);
 
 	if (1) {
 		DKP_smartdownload("/tmp/_.dkp");
